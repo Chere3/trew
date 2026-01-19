@@ -1,0 +1,59 @@
+import { Meta } from '@storybook/blocks';
+
+<Meta title="Navigation/Overview" />
+
+# Navigation Components
+
+Navigation components provide layout structure and navigation patterns for the application.
+
+## Components
+
+### Header
+Top navigation bar with backdrop blur and shadow effects.
+
+### Sidebar
+Collapsible sidebar container for navigation and content.
+
+### ConversationList
+List of conversations with selection, preview, and unread indicators.
+
+### SearchBar
+Global search with debouncing and clear functionality.
+
+### Tabs
+Tab navigation for organizing content into panels.
+
+## Usage Patterns
+
+### Layout Structure
+```tsx
+<div className="flex h-screen">
+  <Sidebar collapsed={isCollapsed}>
+    <ConversationList
+      conversations={conversations}
+      onSelect={handleSelect}
+    />
+  </Sidebar>
+  <div className="flex-1 flex flex-col">
+    <Header>
+      <SearchBar onSearch={handleSearch} />
+    </Header>
+    <main>{content}</main>
+  </div>
+</div>
+```
+
+## Best Practices
+
+- Use consistent navigation patterns
+- Provide clear visual hierarchy
+- Support keyboard navigation
+- Show active states clearly
+- Handle responsive behavior
+
+## Accessibility
+
+- Keyboard navigation for all navigation elements
+- ARIA labels for navigation regions
+- Focus management for modals and overlays
+- Screen reader announcements for state changes

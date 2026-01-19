@@ -1,0 +1,67 @@
+import { Meta } from '@storybook/blocks';
+
+<Meta title="Media/Overview" />
+
+# Media Components
+
+Media components handle rich content display including code, markdown, images, files, tables, and charts.
+
+## Components
+
+### CodeBlock
+Syntax-highlighted code display with copy functionality and line numbers.
+
+### MarkdownRenderer
+Rich markdown content rendering for AI responses.
+
+### ImageGallery
+Image carousel with lightbox view and navigation.
+
+### FilePreview
+File preview cards with download and remove actions.
+
+### Table
+Data tables with sorting, alignment, and custom rendering.
+
+### Chart
+Chart wrapper component for data visualizations.
+
+## Usage Patterns
+
+### Code Display
+```tsx
+<CodeBlock
+  code={codeString}
+  language="typescript"
+  showLineNumbers
+  showCopyButton
+/>
+```
+
+### Markdown Content
+```tsx
+<MarkdownRenderer content={markdownString} />
+```
+
+### Image Gallery
+```tsx
+<ImageGallery
+  images={imageArray}
+  columns={3}
+/>
+```
+
+## Best Practices
+
+- Use appropriate code highlighting for readability
+- Optimize images before display
+- Provide alt text for all images
+- Use tables for structured data only
+- Ensure charts are accessible with proper labels
+
+## Accessibility
+
+- Code blocks are keyboard navigable
+- Images have descriptive alt text
+- Tables have proper headers
+- Charts include text alternatives

@@ -1,0 +1,60 @@
+import { Meta } from '@storybook/blocks';
+
+<Meta title="Input/Overview" />
+
+# Input Components
+
+Input components provide various ways for users to interact with the conversational interface, from text input to voice and file attachments.
+
+## Components
+
+### MessageComposer
+Main chat input field with auto-resize, attachments, and voice input support.
+
+### QuickReplies
+Suggestion chips for quick responses in conversations.
+
+### AttachmentPicker
+File upload interface with preview, validation, and removal.
+
+### VoiceInput
+Voice recording component with speech-to-text conversion.
+
+### CommandPalette
+Slash commands and quick action interface.
+
+## Usage Patterns
+
+### Basic Message Input
+```tsx
+<MessageComposer
+  onSend={(message) => handleSend(message)}
+  placeholder="Type your message..."
+/>
+```
+
+### With Quick Replies
+```tsx
+<QuickReplies
+  replies={[
+    { id: '1', label: 'Yes' },
+    { id: '2', label: 'No' },
+  ]}
+  onSelect={(reply) => handleQuickReply(reply)}
+/>
+```
+
+## Best Practices
+
+- Use Server Actions for form submission
+- Handle file uploads via Server Actions or Route Handlers
+- Voice input requires browser APIs (Client Component only)
+- Debounce search inputs for better performance
+- Validate file types and sizes before upload
+
+## Accessibility
+
+- Keyboard navigation for all inputs
+- Screen reader labels for file inputs
+- Voice input requires microphone permissions
+- Clear error messages for validation failures

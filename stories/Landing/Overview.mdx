@@ -1,0 +1,87 @@
+import { Meta } from '@storybook/blocks';
+import { Features } from '@/components/landing/Features';
+
+<Meta title="Landing/Overview" />
+
+# Landing Components
+
+Landing page components for the Trew AI platform. These components are designed to showcase the product's value proposition and features.
+
+## Components
+
+### Hero
+Main hero section with headline, value proposition, and interactive demo.
+
+### Features
+Feature cards displaying key value propositions with UI component mockups. Each card includes:
+- Visual UI mockup showing the feature in action
+- Gradient title overlay positioned on the image
+- Descriptive text explaining the benefit
+
+### TrustIndicators
+Company logos and trust signals to build credibility.
+
+### Testimonials
+Customer testimonials with quotes and author information.
+
+### ChatDemo
+Animated chat interface demo showing model switching capabilities.
+
+### Pricing
+Comprehensive pricing page with hero section, monthly/annual billing toggle, three pricing tiers (Starter, Pro, Enterprise), feature comparison table, FAQ accordion, and trust signals. Fully SEO-optimized with structured data support.
+
+#### Sub-components:
+- **PricingCard**: Individual pricing tier card with features list and CTA
+- **FAQItem**: Accordion-style FAQ item with question and expandable answer
+- **PricingBillingToggle**: Toggle component for switching between monthly/annual billing
+- **PricingTrustSignals**: Trust indicators section (Cancel Anytime, No Hidden Fees, Money-Back Guarantee)
+
+## Usage Patterns
+
+### Features Section
+
+The Features component displays six key features in a responsive grid:
+
+```tsx
+import { Features } from '@/components/landing/Features'
+
+<Features />
+```
+
+Each feature card includes:
+- **UI Mockup**: Visual representation of the feature using actual UI components
+- **Gradient Title**: Title with gradient text overlay on the image
+- **Description**: Clear explanation of the feature's benefit
+
+### Feature Cards Structure
+
+```tsx
+{
+  title: "Feature Name",
+  description: "Feature description",
+  gradient: "from-color-500/10 to-color-500/10", // Card background
+  titleGradient: "from-color-500 to-color-500", // Title text gradient
+  mockup: MockupComponent // React component for UI mockup
+}
+```
+
+## Design Principles
+
+- **Visual Hierarchy**: Gradient overlays ensure titles are readable over mockups
+- **Consistency**: All cards follow the same structure and spacing
+- **Interactivity**: Hover effects provide visual feedback
+- **Responsiveness**: Grid adapts from 1 column (mobile) to 3 columns (desktop)
+
+## Best Practices
+
+- Keep mockup components simple and focused on the feature
+- Use consistent aspect ratios for mockup areas
+- Ensure gradient overlays provide sufficient contrast for readability
+- Maintain consistent spacing and padding across cards
+
+## Accessibility
+
+- All feature cards are keyboard navigable
+- Gradient overlays ensure text contrast meets WCAG standards
+- Descriptive text provides context for visual mockups
+- Cards use semantic HTML structure

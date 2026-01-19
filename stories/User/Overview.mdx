@@ -1,0 +1,64 @@
+import { Meta } from '@storybook/blocks';
+
+<Meta title="User/Overview" />
+
+# User Components
+
+User components handle user management, profiles, presence, and settings.
+
+## Components
+
+### UserProfile
+Profile display card with avatar, name, email, role, and status.
+
+### UserMenu
+User dropdown menu with profile, settings, billing, and logout options.
+
+### PresenceIndicator
+Online/offline/away/busy status indicators.
+
+### SettingsPanel
+Settings UI with tabs, toggles, and configuration options.
+
+## Usage Patterns
+
+### User Menu in Header
+```tsx
+<Header>
+  <div className="flex items-center gap-4">
+    <SearchBar />
+    <UserMenu
+      user={currentUser}
+      onProfile={() => navigate('/profile')}
+      onSettings={() => navigate('/settings')}
+      onSignOut={() => signOut()}
+    />
+  </div>
+</Header>
+```
+
+### Profile Display
+```tsx
+<UserProfile
+  name="John Doe"
+  email="john@example.com"
+  avatar={avatarUrl}
+  role="Administrator"
+  status="online"
+/>
+```
+
+## Best Practices
+
+- Show presence status when relevant
+- Provide easy access to settings
+- Support profile customization
+- Handle authentication states
+- Respect user privacy preferences
+
+## Accessibility
+
+- User menus are keyboard accessible
+- Profile information is properly labeled
+- Settings toggles have clear labels
+- Status indicators are announced to screen readers

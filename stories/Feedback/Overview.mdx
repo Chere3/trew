@@ -1,0 +1,79 @@
+import { Meta } from '@storybook/blocks';
+
+<Meta title="Feedback/Overview" />
+
+# Feedback Components
+
+Feedback components provide system feedback to users including loading states, errors, empty states, and progress indicators.
+
+## Components
+
+### LoadingState
+Various loading indicator variants (spinner, skeleton, dots).
+
+### ErrorState
+Error displays with retry functionality and clear messaging.
+
+### EmptyState
+Empty/fallback states with optional icons and actions.
+
+### ProgressBar
+Progress indicators with labels, values, and variants.
+
+### SystemMessage
+System notifications with variants for different message types.
+
+## Usage Patterns
+
+### Loading
+```tsx
+{isLoading ? (
+  <LoadingState variant="spinner" message="Loading..." />
+) : (
+  <Content />
+)}
+```
+
+### Error Handling
+```tsx
+{error ? (
+  <ErrorState
+    message={error.message}
+    onRetry={() => retry()}
+  />
+) : (
+  <Content />
+)}
+```
+
+### Empty State
+```tsx
+{items.length === 0 ? (
+  <EmptyState
+    icon={<Inbox />}
+    title="No items"
+    description="Get started by creating your first item"
+    action={{
+      label: 'Create Item',
+      onClick: handleCreate,
+    }}
+  />
+) : (
+  <ItemList items={items} />
+)}
+```
+
+## Best Practices
+
+- Show loading states for async operations
+- Provide clear, actionable error messages
+- Use empty states to guide users
+- Show progress for long-running operations
+- Keep feedback messages concise and helpful
+
+## Accessibility
+
+- Loading states are announced to screen readers
+- Error messages are clearly visible and actionable
+- Progress indicators show percentage and status
+- Empty states provide guidance for next steps

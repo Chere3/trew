@@ -1,0 +1,48 @@
+<svg width="600" height="800" viewBox="0 0 600 800" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="blueGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1242EF;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0ea5e9;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="lightBlueGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#38bdf8;stop-opacity:0.3" />
+      <stop offset="100%" style="stop-color:#7dd3fc;stop-opacity:0.2" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background circles -->
+  <circle cx="300" cy="200" r="150" fill="url(#lightBlueGradient)" opacity="0.4"/>
+  <circle cx="500" cy="600" r="120" fill="url(#lightBlueGradient)" opacity="0.3"/>
+  <circle cx="100" cy="700" r="100" fill="url(#lightBlueGradient)" opacity="0.25"/>
+  
+  <!-- Main shield/lock icon -->
+  <g transform="translate(300, 400)">
+    <!-- Shield shape -->
+    <path d="M 0,-120 Q -60,-120 -80,-80 Q -100,-40 -100,0 Q -100,40 -80,80 Q -60,120 0,120 Q 60,120 80,80 Q 100,40 100,0 Q 100,-40 80,-80 Q 60,-120 0,-120 Z" 
+          fill="url(#blueGradient)" 
+          stroke="#1242EF" 
+          stroke-width="3"/>
+    
+    <!-- Lock body -->
+    <rect x="-30" y="20" width="60" height="50" rx="4" fill="white" opacity="0.9"/>
+    <rect x="-20" y="-40" width="40" height="30" rx="4" fill="white" opacity="0.9"/>
+    
+    <!-- Keyhole -->
+    <circle cx="0" cy="45" r="8" fill="#1242EF"/>
+    <rect x="-3" y="45" width="6" height="20" rx="2" fill="#1242EF"/>
+  </g>
+  
+  <!-- Floating particles -->
+  <circle cx="150" cy="150" r="8" fill="#1242EF" opacity="0.6"/>
+  <circle cx="450" cy="250" r="6" fill="#0ea5e9" opacity="0.5"/>
+  <circle cx="80" cy="500" r="10" fill="#38bdf8" opacity="0.4"/>
+  <circle cx="520" cy="450" r="7" fill="#1242EF" opacity="0.5"/>
+  <circle cx="200" cy="750" r="9" fill="#0ea5e9" opacity="0.4"/>
+  <circle cx="480" cy="750" r="8" fill="#38bdf8" opacity="0.5"/>
+  
+  <!-- Decorative lines -->
+  <line x1="50" y1="100" x2="150" y2="100" stroke="#1242EF" stroke-width="2" opacity="0.3" stroke-linecap="round"/>
+  <line x1="450" y1="100" x2="550" y2="100" stroke="#0ea5e9" stroke-width="2" opacity="0.3" stroke-linecap="round"/>
+  <line x1="50" y1="700" x2="150" y2="700" stroke="#38bdf8" stroke-width="2" opacity="0.3" stroke-linecap="round"/>
+  <line x1="450" y1="700" x2="550" y2="700" stroke="#1242EF" stroke-width="2" opacity="0.3" stroke-linecap="round"/>
+</svg>

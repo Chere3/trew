@@ -1,0 +1,65 @@
+import { Meta } from '@storybook/blocks';
+
+<Meta title="Chat/Overview" />
+
+# Chat Components
+
+Chat components are specialized for building conversational interfaces. They provide message display, actions, and interaction patterns optimized for AI conversations.
+
+## Components
+
+### MessageBubble
+Individual message display with role variants (user, assistant, system). Supports streaming, errors, and actions.
+
+### MessageList
+Container for multiple messages with proper spacing and scrolling.
+
+### MessageActions
+Action buttons for messages (copy, retry, feedback) in inline or dropdown variants.
+
+### MessageAvatar
+Avatar component with online status indicators for chat participants.
+
+### MessageTimestamp
+Timestamp display with multiple format options (short, long, relative).
+
+### DateSeparator
+Visual separator for dividing messages by date in conversations.
+
+### TypingIndicator
+Animated indicator showing when someone is typing.
+
+## Usage Pattern
+
+```tsx
+<MessageList>
+  <DateSeparator date={new Date()} />
+  <MessageBubble
+    role="user"
+    content="Hello!"
+    timestamp={new Date()}
+  />
+  <MessageBubble
+    role="assistant"
+    content="Hi there! How can I help?"
+    timestamp={new Date()}
+    onCopy={() => handleCopy()}
+    onFeedback={(positive) => handleFeedback(positive)}
+  />
+  <TypingIndicator />
+</MessageList>
+```
+
+## Design Principles
+
+- **Visual Separation**: Clear distinction between user and AI messages
+- **Calm & Structured**: Message containers feel elevated but not noisy
+- **Reading Comfort**: Optimized line-height and spacing for long-form content
+- **Action Accessibility**: Actions visible on hover, not cluttering the interface
+
+## Accessibility
+
+- Proper ARIA roles for message regions
+- Keyboard navigation for actions
+- Screen reader announcements for new messages
+- Color contrast for all text

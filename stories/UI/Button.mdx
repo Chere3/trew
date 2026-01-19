@@ -1,0 +1,64 @@
+import { Meta, Story } from '@storybook/blocks';
+import * as ButtonStories from '../../components/ui/button.stories';
+
+<Meta of={ButtonStories} />
+
+# Button
+
+The Button component provides tactile, retro-realistic button styling with physical pressable appearance. Features gradients, shadows, and clear interaction states.
+
+## When to Use
+
+- Primary actions and form submissions
+- Navigation and important user actions
+- Confirmation dialogs and destructive actions
+- Secondary actions and outline buttons
+
+## When Not to Use
+
+- For simple text links (use Link variant)
+- For icon-only actions without labels (use IconButton)
+- For navigation within the app (use navigation components)
+
+## Variants
+
+### Default
+Primary action button with red gradient and tactile depth.
+
+<Story of={ButtonStories.Default} />
+
+### Destructive
+For dangerous or destructive actions. Uses error red distinct from primary action red.
+
+<Story of={ButtonStories.Destructive} />
+
+### Outline
+For secondary actions with border and depth.
+
+<Story of={ButtonStories.Variants} />
+
+## Sizes
+
+Buttons come in four sizes: small, default, large, and icon.
+
+<Story of={ButtonStories.Sizes} />
+
+## States
+
+Buttons support normal, hover, active, and disabled states.
+
+<Story of={ButtonStories.States} />
+
+## Accessibility
+
+- Keyboard accessible (Enter/Space)
+- Focus visible with ring
+- ARIA attributes for screen readers
+- Disabled state properly announced
+
+## Design Tokens
+
+- Primary color: Red (`0 72% 55%` HSL)
+- Shadow: `button-raised`, `button-hover`, `button-pressed`
+- Border radius: `rounded-full`
+- Typography: Medium weight, tight tracking

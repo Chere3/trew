@@ -1,26 +1,194 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@layer base {
+  :root {
+    /* Modern YC SaaS palette - neutrals dominant, red for action */
+    --background: #FFFFFF; /* Off-white */
+    --foreground: #262626; /* Charcoal */
+    --card: #FCFCFC; /* Very light gray */
+    --card-foreground: #262626;
+    --popover: #FCFCFC;
+    --popover-foreground: #262626;
+
+    /* Primary: Blue scale - signals action and intelligence */
+    --primary: #1242EF; /* Bright, confident blue */
+    --primary-foreground: #FFFFFF; /* White text */
+    
+    
+    /* Secondary: Muted neutrals */
+    --secondary: #EBEBEB; /* Light gray */
+    --secondary-foreground: #333333;
+    --muted: #F0F0F0; /* Very soft gray */
+    --muted-foreground: #737373; /* Muted gray */
+    /* Accent: Soft red for hover/focus states */
+    --accent: calc(var(--primary) - 10%); /* Soft blue */
+    --accent-foreground: #262626;
+    /* Destructive: Error red (distinct from primary action red) */
+    --destructive: #E94343; /* Vivid error red */
+    --destructive-foreground: #FAFAFA;
+    --border: #E0E0E0; /* Soft border */
+    --input: #EDEDED; /* Soft input background */
+    --ring: #1242EF; /* Primary blue for focus ring */
+    --radius: 0.75rem; /* Softer, modern border radius */
+    /* Chart colors with red-primary palette */
+    --chart-1: #DC3A3A; /* Primary red */
+    --chart-2: #D65757; /* Soft red */
+    --chart-3: #C78F8F; /* Muted red */
+    --chart-4: #5C7FA8; /* Soft blue */
+    --chart-5: #999999; /* Neutral gray */
+    /* Grid pattern for subtle background */
+    --grid-color: rgba(0, 0, 0, 0.03);
+  }
+
+  .dark {
+    /* Dark mode - deeper tones, red remains primary */
+    --background: #141414; /* Near black */
+    --foreground: #EBEBEB; /* Light gray */
+    --card: #1A1A1A; /* Slightly lighter than background */
+    --card-foreground: #EBEBEB;
+    --popover: #1A1A1A;
+    --popover-foreground: #EBEBEB;
+    /* Primary: Brighter blue for contrast in dark mode */
+    --primary: #1242EF; /* Vibrant blue */
+    --primary-foreground: #FFFFFF; /* White text for contrast */
+    /* Secondary: Deep neutrals */
+    --secondary: #2E2E2E; /* Deep gray */
+    --secondary-foreground: #EBEBEB;
+    --muted: #262626; /* Deep muted gray */
+    --muted-foreground: #A6A6A6; /* Muted gray */
+    --accent: calc(var(--primary) - 10%); /* Soft blue for dark mode */
+    --accent-foreground: #EBEBEB;
+    --destructive: #EB5A5A; /* Vivid error red for dark mode */
+    --destructive-foreground: #EBEBEB;
+    --border: #2E2E2E; /* Subtle border */
+    --input: #1F1F1F; /* Dark input */
+    --ring: #1242EF; /* Primary blue for focus */
+    /* Chart colors adjusted for dark mode */
+    --chart-1: #1242EF; /* Primary blue */
+    --chart-2: calc(var(--primary) - 10%); /* Soft blue */
+    --chart-3: calc(var(--primary) - 20%); /* Muted blue */
+    --chart-4: calc(var(--primary) - 30%); /* Muted blue */
+    --chart-5: calc(var(--primary) - 40%); /* Muted blue */
+    /* Grid pattern for subtle background - lighter for dark mode */
+    --grid-color: rgba(255, 255, 255, 0.05);
+  }
 }
 
-@theme inline {
+@theme {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --font-sans: var(--font-inter), 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', Monaco, 'Cascadia Code', monospace;
+  --font-caveat: var(--font-caveat), 'Caveat', cursive;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-inter), 'Inter', system-ui, -apple-system, sans-serif;
+  letter-spacing: -0.01em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+@keyframes slideOutUp {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-100%);
+  }
+}
+
+@keyframes slideInDown {
+  from {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-out-up {
+  animation: slideOutUp 0.3s ease-out forwards;
+}
+
+.animate-slide-in-down {
+  animation: slideInDown 0.3s ease-out forwards;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+@keyframes scroll-horizontal {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-scroll-horizontal {
+  animation: scroll-horizontal 15s linear infinite;
+}
+
+@keyframes spin-slow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin-slow {
+  animation: spin-slow 20s linear infinite;
 }
