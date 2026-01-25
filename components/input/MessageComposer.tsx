@@ -8,7 +8,7 @@ import { useState, useRef, KeyboardEvent } from 'react'
 import { EmojiPicker } from './EmojiPicker'
 
 export interface MessageComposerProps {
-  onSend?: (message: string) => void
+  onSend?: (message: string, attachments: File[]) => void
   onAttachment?: () => void
   onVoiceInput?: () => void
   placeholder?: string
@@ -29,12 +29,15 @@ export function MessageComposer({
   autoFocus = false,
 }: MessageComposerProps) {
   const [message, setMessage] = useState('')
+  const [files, setFiles] = useState<File[]>([])
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleSend = () => {
-    if (message.trim() && !disabled) {
-      onSend?.(message.trim())
+    if ((message.trim() || files.length > 0) && !disabled) {
+      onSend?.(message.trim(), files)
       setMessage('')
+      setFiles([])
       if (textareaRef.current) {
         textareaRef.current.style.height = 'auto'
       }
@@ -60,6 +63,21 @@ export function MessageComposer({
       textareaRef.current.style.height = 'auto'
       textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`
     }
+  }
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const newFiles = Array.from(e.target.files)
+      setFiles((prev) => [...prev, ...newFiles])
+    }
+    // Reset input value so same files can be selected again if needed
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
+  }
+
+  const handleRemoveFile = (index: number) => {
+    setFiles((prev) => prev.filter((_, i) => i !== index))
   }
 
   const handleEmojiSelect = (emoji: string) => {
@@ -93,16 +111,86 @@ export function MessageComposer({
     }, 0)
   }
 
+  const triggerFileSelect = () => {
+    fileInputRef.current?.click()
+  }
+
+  const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const items = e.clipboardData?.items
+    if (!items) return
+
+    // Check if any clipboard item is an image
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i]
+      if (item.type.startsWith('image/')) {
+        e.preventDefault()
+        const file = item.getAsFile()
+        if (file) {
+          setFiles((prev) => [...prev, file])
+        }
+      }
+    }
+  }
+
   return (
     <div className={cn('bg-transparent p-4 pb-6', className)}>
       <div className="max-w-3xl mx-auto bg-background/80 backdrop-blur-sm border border-border/50 rounded-2xl p-4 shadow-sm">
+        {files.length > 0 && (
+          <div className="flex gap-2 overflow-x-auto pb-4 mb-2 scrollbar-hide">
+            {files.map((file, index) => (
+              <div
+                key={index}
+                className="relative flex-shrink-0 w-20 h-20 rounded-xl overflow-hidden border border-border group"
+              >
+                {file.type.startsWith('image/') ? (
+                  <img
+                    src={URL.createObjectURL(file)}
+                    alt={file.name}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-secondary text-xs text-center p-1 break-words">
+                    {file.name.split('.').pop()}
+                  </div>
+                )}
+                <button
+                  onClick={() => handleRemoveFile(index)}
+                  className="absolute top-1 right-1 bg-black/50 hover:bg-black/70 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="12"
+                    height="12"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                  </svg>
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
         <div className="flex items-end gap-3">
           <div className="flex-1 relative">
+            <input
+              type="file"
+              ref={fileInputRef}
+              className="hidden"
+              onChange={handleFileSelect}
+              multiple
+            />
             <Textarea
               ref={textareaRef}
               value={message}
               onChange={handleInput}
               onKeyDown={handleKeyDown}
+              onPaste={handlePaste}
               placeholder={placeholder}
               disabled={disabled}
               rows={1}
@@ -110,17 +198,15 @@ export function MessageComposer({
               autoFocus={autoFocus}
             />
             <div className="absolute right-2 bottom-2 flex gap-1">
-              {onAttachment && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={onAttachment}
-                  className="h-7 w-7 p-0"
-                >
-                  <Paperclip className="h-4 w-4" />
-                </Button>
-              )}
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={triggerFileSelect}
+                className="h-7 w-7 p-0"
+              >
+                <Paperclip className="h-4 w-4" />
+              </Button>
               {onVoiceInput && (
                 <Button
                   type="button"
@@ -147,7 +233,7 @@ export function MessageComposer({
           </div>
           <Button
             onClick={handleSend}
-            disabled={!message.trim() || disabled}
+            disabled={(!message.trim() && files.length === 0) || disabled}
             size="icon"
             className="h-11 w-11 shrink-0 rounded-xl"
           >

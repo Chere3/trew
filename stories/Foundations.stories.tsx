@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { tokens, colors, typography, spacing } from '@/components/foundations'
+import { colors, typography, spacing } from '@/components/foundations'
 
 const meta = {
   title: 'Foundations/Design Tokens',
@@ -40,7 +40,7 @@ export const Typography: Story = {
       {Object.entries(typography.fontSize).map(([key, value]) => (
         <div key={key}>
           <div className="text-sm text-muted-foreground mb-1">{key}</div>
-          <div style={{ fontSize: value[0], lineHeight: value[1] }}>
+          <div style={{ fontSize: value[0], lineHeight: value[1].lineHeight }}>
             The quick brown fox jumps over the lazy dog
           </div>
         </div>

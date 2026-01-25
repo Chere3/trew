@@ -39,6 +39,10 @@ export const Playground: Story = {
 }
 
 export const Formats: Story = {
+  args: {
+    timestamp: new Date(),
+    format: 'short',
+  },
   render: () => (
     <div className="space-y-4">
       <div>
@@ -58,6 +62,10 @@ export const Formats: Story = {
 }
 
 export const RelativeTimes: Story = {
+  args: {
+    timestamp: new Date(Date.now() - 30000),
+    format: 'relative',
+  },
   render: () => (
     <div className="space-y-2">
       <MessageTimestamp timestamp={new Date(Date.now() - 30000)} format="relative" />

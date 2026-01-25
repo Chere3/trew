@@ -55,6 +55,12 @@ export const Playground: Story = {
 }
 
 export const Languages: Story = {
+  args: {
+    code: sampleCode,
+    language: 'typescript',
+    showLineNumbers: false,
+    showCopyButton: true,
+  },
   render: () => (
     <div className="space-y-4">
       <div>
@@ -74,41 +80,30 @@ export const Languages: Story = {
 }
 
 export const WithLineNumbers: Story = {
-  render: () => (
-    <CodeBlock
-      code={sampleCode}
-      language="typescript"
-      showLineNumbers={true}
-    />
-  ),
+  args: {
+    code: sampleCode,
+    language: 'typescript',
+    showLineNumbers: true,
+    showCopyButton: true,
+  },
 }
 
 export const WithoutCopyButton: Story = {
-  render: () => (
-    <CodeBlock
-      code={sampleCode}
-      language="typescript"
-      showCopyButton={false}
-    />
-  ),
+  args: {
+    code: sampleCode,
+    language: 'typescript',
+    showLineNumbers: false,
+    showCopyButton: false,
+  },
 }
 
 export const LongCode: Story = {
-  render: () => (
-    <CodeBlock
-      code={`// This is a longer code example
-function processData(data: any[]) {
-  return data
-    .filter(item => item.active)
-    .map(item => ({
-      id: item.id,
-      name: item.name.toUpperCase(),
-      timestamp: new Date(item.createdAt)
-    }))
-    .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
-    .slice(0, 10);
-}`}
-      language="typescript"
-    />
-  ),
+  args: {
+    code: sampleCode,
+    language: 'typescript',
+    showLineNumbers: false,
+    showCopyButton: true,
+  },
 }
+
+

@@ -28,11 +28,11 @@ export function TrustIndicators() {
                 key={index}
                 className="group relative flex items-center justify-center rounded-xl border border-border/50 bg-card/50 p-6 backdrop-blur-sm transition-all duration-300 hover:border-primary/40 hover:bg-card hover:shadow-xl hover:scale-105 hover:-translate-y-1"
               >
-                <div className="relative w-full h-12 grayscale opacity-60 transition-all duration-300 group-hover:grayscale-0 group-hover:opacity-100 dark:invert dark:opacity-70 dark:group-hover:opacity-100">
+                <div className="relative w-full h-12 grayscale opacity-60 transition-all duration-300 group-hover:grayscale-0 group-hover:opacity-100 dark:opacity-70 dark:group-hover:opacity-100">
                   <img
                     src={company.logo}
                     alt={`${company.name} logo`}
-                    className="w-full h-full object-contain"
+                    className="trust-indicator-logo w-full h-full object-contain"
                   />
                 </div>
               </div>

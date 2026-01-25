@@ -31,31 +31,26 @@ export const Playground: Story = {
 }
 
 export const WithCode: Story = {
-  render: () => (
-    <MarkdownRenderer
-      content={`Here is some \`inline code\` and a code block:
+  args: {
+    content: `Here is some \`inline code\` and a code block:
 
 \`\`\`javascript
 function hello() {
   console.log('Hello, World!');
 }
 \`\`\``}
-    />
-  ),
 }
 
 export const WithLinks: Story = {
-  render: () => (
-    <MarkdownRenderer
-      content="Visit [our website](https://example.com) for more information."
-    />
-  ),
+  args: {
+    content: "Visit [our website](https://example.com) for more information."
+  }
+
 }
 
 export const LongContent: Story = {
-  render: () => (
-    <MarkdownRenderer
-      content={`# Introduction
+  args: {
+    content: `# Introduction
 
 This is a **longer** markdown document with multiple paragraphs.
 
@@ -70,6 +65,4 @@ Here is some content with *emphasis* and \`code\`.
 - Item 3
 
 [Learn more](https://example.com)`}
-    />
-  ),
 }

@@ -1,49 +1,78 @@
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { cn } from '@/lib/utils'
-import { Info, AlertCircle, CheckCircle2, AlertTriangle } from 'lucide-react'
+import { Info, AlertCircle, CheckCircle2, AlertTriangle, LucideIcon } from 'lucide-react'
+import type { SystemMessageVariant, SystemMessageProps as SystemMessagePropsType } from '@/lib/types'
+import { SYSTEM_MESSAGE_VARIANT_INFO, SYSTEM_MESSAGE_VARIANT_SUCCESS, SYSTEM_MESSAGE_VARIANT_WARNING, SYSTEM_MESSAGE_VARIANT_ERROR } from '@/lib/constants'
 
-export type SystemMessageVariant = 'info' | 'success' | 'warning' | 'error'
+export type { SystemMessageVariant }
+export type SystemMessageProps = SystemMessagePropsType
 
-export interface SystemMessageProps {
-  title?: string
-  message: string
-  variant?: SystemMessageVariant
-  className?: string
+interface VariantConfig {
+  icon: LucideIcon
+  containerClass: string
+  iconClass: string
+  ringClass: string
 }
 
-const variantConfig = {
-  info: {
+const variantConfig: Record<SystemMessageVariant, VariantConfig> = {
+  [SYSTEM_MESSAGE_VARIANT_INFO]: {
     icon: Info,
-    className: 'border-blue-500/50 bg-blue-500/10 text-blue-600 dark:text-blue-400 dark:border-blue-400/50 dark:bg-blue-400/10',
+    containerClass: 'border-blue-500/10 bg-blue-500/5',
+    iconClass: 'text-blue-600 dark:text-blue-400',
+    ringClass: 'ring-blue-500/10',
   },
-  success: {
+  [SYSTEM_MESSAGE_VARIANT_SUCCESS]: {
     icon: CheckCircle2,
-    className: 'border-green-500/50 bg-green-500/10 text-green-600 dark:text-green-400 dark:border-green-400/50 dark:bg-green-400/10',
+    containerClass: 'border-emerald-500/10 bg-emerald-500/5',
+    iconClass: 'text-emerald-600 dark:text-emerald-400',
+    ringClass: 'ring-emerald-500/10',
   },
-  warning: {
+  [SYSTEM_MESSAGE_VARIANT_WARNING]: {
     icon: AlertTriangle,
-    className: 'border-yellow-500/50 bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 dark:border-yellow-400/50 dark:bg-yellow-400/10',
+    containerClass: 'border-amber-500/10 bg-amber-500/5',
+    iconClass: 'text-amber-600 dark:text-amber-400',
+    ringClass: 'ring-amber-500/10',
   },
-  error: {
+  [SYSTEM_MESSAGE_VARIANT_ERROR]: {
     icon: AlertCircle,
-    className: 'border-red-500/50 bg-red-500/10 text-red-600 dark:text-red-400 dark:border-red-400/50 dark:bg-red-400/10',
+    containerClass: 'border-destructive/10 bg-destructive/5',
+    iconClass: 'text-destructive',
+    ringClass: 'ring-destructive/10',
   },
 }
 
 export function SystemMessage({
   title,
   message,
-  variant = 'info',
+  variant = SYSTEM_MESSAGE_VARIANT_INFO,
   className,
 }: SystemMessageProps) {
   const config = variantConfig[variant]
   const Icon = config.icon
 
   return (
-    <Alert className={cn(config.className, className)}>
-      <Icon className="h-4 w-4" />
-      {title && <AlertTitle>{title}</AlertTitle>}
-      <AlertDescription>{message}</AlertDescription>
-    </Alert>
+    <div
+      className={cn(
+        "flex flex-col items-center justify-center p-8 text-center rounded-2xl border animate-fade-in",
+        config.containerClass,
+        className
+      )}
+    >
+      <div className={cn(
+        "rounded-full bg-background p-4 mb-4 shadow-sm ring-1",
+        config.ringClass
+      )}>
+        <Icon className={cn("h-8 w-8", config.iconClass)} />
+      </div>
+
+      {title && (
+        <h3 className="text-lg font-bold text-foreground mb-2 tracking-tight">
+          {title}
+        </h3>
+      )}
+
+      <p className="text-sm text-muted-foreground max-w-sm leading-relaxed">
+        {message}
+      </p>
+    </div>
   )
 }

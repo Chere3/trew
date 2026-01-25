@@ -46,35 +46,18 @@ export const Playground: Story = {
 }
 
 export const Columns: Story = {
-  render: () => (
-    <div className="space-y-8">
-      <div>
-        <p className="text-sm font-medium mb-2">1 Column</p>
-        <ImageGallery images={sampleImages.slice(0, 3)} columns={1} />
-      </div>
-      <div>
-        <p className="text-sm font-medium mb-2">2 Columns</p>
-        <ImageGallery images={sampleImages} columns={2} />
-      </div>
-      <div>
-        <p className="text-sm font-medium mb-2">3 Columns</p>
-        <ImageGallery images={sampleImages} columns={3} />
-      </div>
-      <div>
-        <p className="text-sm font-medium mb-2">4 Columns</p>
-        <ImageGallery images={sampleImages} columns={4} />
-      </div>
-    </div>
-  ),
+  args: {
+    images: sampleImages,
+    columns: 3,
+  },
 }
 
 export const ManyImages: Story = {
-  render: () => {
-    const manyImages = Array.from({ length: 12 }).map((_, i) => ({
+  args: {
+    images: Array.from({ length: 12 }).map((_, i) => ({
       id: String(i + 1),
       src: `https://via.placeholder.com/300?text=Image+${i + 1}`,
       alt: `Image ${i + 1}`,
     }))
-    return <ImageGallery images={manyImages} columns={3} />
   },
 }

@@ -48,6 +48,10 @@ export const Playground: Story = {
 }
 
 export const WithCustomRender: Story = {
+  args: {
+    columns,
+    data: sampleData,
+  },
   render: () => (
     <Table
       columns={[
@@ -69,41 +73,28 @@ export const WithCustomRender: Story = {
 }
 
 export const AlignedColumns: Story = {
-  render: () => (
-    <Table
-      columns={[
-        { key: 'name', header: 'Name', align: 'left' },
-        { key: 'email', header: 'Email', align: 'center' },
-        { key: 'role', header: 'Role', align: 'right' },
-      ]}
-      data={sampleData}
-    />
-  ),
+  args: {
+    columns,
+    data: sampleData,
+  },
 }
 
 export const ManyRows: Story = {
-  render: () => {
-    const manyData = Array.from({ length: 20 }).map((_, i) => ({
+  args: {
+    columns,
+    data: Array.from({ length: 20 }).map((_, i) => ({
       id: i + 1,
       name: `User ${i + 1}`,
       email: `user${i + 1}@example.com`,
       role: i % 3 === 0 ? 'Admin' : 'User',
     }))
-    return (
-      <Table
-        columns={columns}
-        data={manyData}
-      />
-    )
   },
 }
 
 export const WithoutStripes: Story = {
-  render: () => (
-    <Table
-      columns={columns}
-      data={sampleData}
-      striped={false}
-    />
-  ),
+  args: {
+    columns,
+    data: sampleData,
+    striped: false,
+  },
 }

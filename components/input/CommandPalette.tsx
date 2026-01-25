@@ -5,23 +5,10 @@ import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from '@
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
 import { useState, KeyboardEvent } from 'react'
+import type { CommandOption, CommandPaletteProps as CommandPalettePropsType } from '@/lib/types'
 
-export interface CommandOption {
-  id: string
-  label: string
-  description?: string
-  icon?: React.ReactNode
-  keywords?: string[]
-}
-
-export interface CommandPaletteProps {
-  commands: CommandOption[]
-  onSelect?: (command: CommandOption) => void
-  open?: boolean
-  onOpenChange?: (open: boolean) => void
-  placeholder?: string
-  className?: string
-}
+export type { CommandOption }
+export type CommandPaletteProps = CommandPalettePropsType
 
 export function CommandPalette({
   commands,

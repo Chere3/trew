@@ -1,5 +1,5 @@
 // Provider icon and color mappings
-import { Sparkles, Bot, Brain, Zap, Code, Cpu } from "lucide-react";
+import { Sparkles, Bot, Brain, Zap, Code, Cpu, Wand2 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 export interface ProviderConfig {
@@ -27,6 +27,7 @@ const PROVIDER_NORMALIZATION: Record<string, string> = {
   "minimax ai": "minimax",
   moonshot: "moonshot",
   "moonshot ai": "moonshot",
+  trew: "trew",
 };
 
 // Provider configuration mapping
@@ -104,6 +105,12 @@ export const PROVIDER_CONFIG: Record<string, ProviderConfig> = {
     // Using Clearbit logo CDN as fallback for less common providers
     logoUrl: "https://logo.clearbit.com/moonshot.cn",
   },
+  trew: {
+    icon: Wand2,
+    color: "text-primary",
+    displayName: "Trew",
+    // No external logo - uses Wand2 icon
+  },
 };
 
 // Default provider config for unknown providers
@@ -144,7 +151,7 @@ export function getIconName(provider: string): string {
     [Code.toString()]: "Code",
     [Cpu.toString()]: "Cpu",
   };
-  
+
   // Use a simpler approach: check which icon matches
   if (config.icon === Sparkles) return "Sparkles";
   if (config.icon === Bot) return "Bot";
@@ -152,6 +159,7 @@ export function getIconName(provider: string): string {
   if (config.icon === Zap) return "Zap";
   if (config.icon === Code) return "Code";
   if (config.icon === Cpu) return "Cpu";
-  
+  if (config.icon === Wand2) return "Wand2";
+
   return "Brain"; // Default
 }

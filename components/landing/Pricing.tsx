@@ -59,8 +59,8 @@ export const pricingTiers: PricingTier[] = [
     id: "starter",
     name: "Starter",
     description: "Perfect for individuals getting started with AI",
-    monthlyPrice: 19,
-    annualPrice: 15, // $15/month when billed annually
+    monthlyPrice: 8,
+    annualPrice: 5, // $5/month when billed annually
     features: [
       { name: "Flagship models", included: true },
       { name: "Other models", included: true },
@@ -81,8 +81,8 @@ export const pricingTiers: PricingTier[] = [
     id: "pro",
     name: "Pro",
     description: "For professionals who need more messages and advanced features",
-    monthlyPrice: 29,
-    annualPrice: 24, // $24/month when billed annually
+    monthlyPrice: 15,
+    annualPrice: 9, // $9/month when billed annually
     badge: "Most Popular",
     popular: true,
     features: [
@@ -105,8 +105,8 @@ export const pricingTiers: PricingTier[] = [
     id: "enterprise",
     name: "Enterprise",
     description: "Advanced features for teams and organizations",
-    monthlyPrice: 99,
-    annualPrice: 79, // $79/month when billed annually
+    monthlyPrice: 30,
+    annualPrice: 18, // $18/month when billed annually
     features: [
       { name: "Flagship models", included: true },
       { name: "Other models", included: true },

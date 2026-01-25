@@ -113,12 +113,12 @@ export function Sidebar({
         prefersReducedMotion || isResizing
           ? 'transition-none'
           : 'transition-all duration-200 ease-out',
-        // Width transitions
-        isCollapsed ? 'w-16' : '',
+        // Hide completely when collapsed
+        isCollapsed ? 'w-0 overflow-hidden border-r-0' : '',
         className
       )}
       style={{
-        width: isCollapsed ? undefined : width,
+        width: isCollapsed ? 0 : width,
         // Use transform for GPU acceleration when not reduced motion
         ...(prefersReducedMotion ? {} : {
           willChange: isResizing ? 'width' : undefined

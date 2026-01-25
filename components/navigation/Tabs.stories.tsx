@@ -19,31 +19,45 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 export const Default: Story = {
-  render: () => (
-    <Tabs defaultValue="all" className="w-full">
-      <Tabs.List>
-        <Tabs.Trigger value="all">All</Tabs.Trigger>
-        <Tabs.Trigger value="active">Active</Tabs.Trigger>
-        <Tabs.Trigger value="archived">Archived</Tabs.Trigger>
-      </Tabs.List>
-      <Tabs.Content value="all">All conversations</Tabs.Content>
-      <Tabs.Content value="active">Active conversations</Tabs.Content>
-      <Tabs.Content value="archived">Archived conversations</Tabs.Content>
-    </Tabs>
-  ),
+  args: {
+    defaultValue: 'all',
+    className: 'w-full',
+    tabs: [
+      { id: 'all', label: 'All', content: 'All conversations' },
+      { id: 'active', label: 'Active', content: 'Active conversations' },
+      { id: 'archived', label: 'Archived', content: 'Archived conversations' },
+    ],
+  },
 }
 
 export const Playground: Story = {
-  render: () => (
-    <Tabs defaultValue="tab1" className="w-full">
-      <Tabs.List>
-        <Tabs.Trigger value="tab1">Tab 1</Tabs.Trigger>
-        <Tabs.Trigger value="tab2">Tab 2</Tabs.Trigger>
-        <Tabs.Trigger value="tab3">Tab 3</Tabs.Trigger>
-      </Tabs.List>
-      <Tabs.Content value="tab1">Content 1</Tabs.Content>
-      <Tabs.Content value="tab2">Content 2</Tabs.Content>
-      <Tabs.Content value="tab3">Content 3</Tabs.Content>
-    </Tabs>
-  ),
+  args: {
+    defaultValue: 'tab1',
+    className: 'w-full',
+    tabs: [
+      { id: 'tab1', label: 'Tab 1', content: 'Content 1' },
+      { id: 'tab2', label: 'Tab 2', content: 'Content 2' },
+      { id: 'tab3', label: 'Tab 3', content: 'Content 3' },
+    ],
+  },
+}
+
+export const Disabled: Story = {
+  args: {
+    defaultValue: 'tab1',
+    className: 'w-full',
+    tabs: [
+      { id: 'tab1', label: 'Tab 1', content: 'Content 1' },
+      { id: 'tab2', label: 'Tab 2', content: 'Content 2', disabled: true },
+      { id: 'tab3', label: 'Tab 3', content: 'Content 3' },
+    ],
+  },
+}
+
+export const Empty: Story = {
+  args: {
+    defaultValue: 'tab1',
+    className: 'w-full',
+    tabs: [],
+  },
 }

@@ -2,22 +2,10 @@
 
 import { Tabs as TabsPrimitive, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { cn } from '@/lib/utils'
+import type { Tab, TabsProps as TabsPropsType } from '@/lib/types'
 
-export interface Tab {
-  id: string
-  label: string
-  content: React.ReactNode
-  disabled?: boolean
-}
-
-export interface TabsProps {
-  tabs: Tab[]
-  defaultValue?: string
-  value?: string
-  onValueChange?: (value: string) => void
-  className?: string
-  orientation?: 'horizontal' | 'vertical'
-}
+export type { Tab }
+export type TabsProps = TabsPropsType
 
 export function Tabs({
   tabs,
@@ -25,17 +13,15 @@ export function Tabs({
   value,
   onValueChange,
   className,
-  orientation = 'horizontal',
 }: TabsProps) {
   return (
     <TabsPrimitive
       defaultValue={defaultValue}
       value={value}
       onValueChange={onValueChange}
-      orientation={orientation}
       className={cn(className)}
     >
-      <TabsList orientation={orientation}>
+      <TabsList>
         {tabs.map((tab) => (
           <TabsTrigger
             key={tab.id}

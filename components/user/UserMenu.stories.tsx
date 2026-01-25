@@ -45,43 +45,37 @@ export const Playground: Story = {
 }
 
 export const WithAvatar: Story = {
-  render: () => (
-    <UserMenu
-      user={{
-        name: 'John Doe',
-        email: 'john.doe@example.com',
-        avatar: 'https://github.com/shadcn.png',
-      }}
-      onProfile={() => console.log('Profile')}
-      onSettings={() => console.log('Settings')}
-      onSignOut={() => console.log('Sign out')}
-    />
-  ),
+  args: {
+    user: {
+      name: 'John Doe',
+      email: 'john.doe@example.com',
+      avatar: 'https://github.com/shadcn.png',
+    },
+    onProfile: () => console.log('Profile'),
+    onSettings: () => console.log('Settings'),
+    onSignOut: () => console.log('Sign out'),
+  },
 }
 
 export const WithFallback: Story = {
-  render: () => (
-    <UserMenu
-      user={{
-        name: 'Jane Smith',
-        email: 'jane.smith@example.com',
-        avatarFallback: 'JS',
-      }}
-      onProfile={() => console.log('Profile')}
-      onSettings={() => console.log('Settings')}
-      onSignOut={() => console.log('Sign out')}
-    />
-  ),
+  args: {
+    user: {
+      name: 'Jane Smith',
+      email: 'jane.smith@example.com',
+      avatarFallback: 'JS',
+    },
+    onProfile: () => console.log('Profile'),
+    onSettings: () => console.log('Settings'),
+    onSignOut: () => console.log('Sign out'),
+  },
 }
 
 export const AllActions: Story = {
-  render: () => (
-    <UserMenu
-      user={sampleUser}
-      onProfile={() => console.log('Profile')}
-      onSettings={() => console.log('Settings')}
-      onBilling={() => console.log('Billing')}
-      onSignOut={() => console.log('Sign out')}
-    />
-  ),
+  args: {
+    user: sampleUser,
+    onProfile: () => console.log('Profile'),
+    onSettings: () => console.log('Settings'),
+    onBilling: () => console.log('Billing'),
+    onSignOut: () => console.log('Sign out'),
+  },
 }

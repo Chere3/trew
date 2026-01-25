@@ -20,9 +20,9 @@
     --secondary-foreground: #333333;
     --muted: #F0F0F0; /* Very soft gray */
     --muted-foreground: #737373; /* Muted gray */
-    /* Accent: Soft red for hover/focus states */
-    --accent: calc(var(--primary) - 10%); /* Soft blue */
-    --accent-foreground: #262626;
+    /* Accent: Soft blue for hover/focus states */
+    --accent: color-mix(in srgb, var(--primary) 10%, #FFFFFF); /* Very soft blue tint */
+    --accent-foreground: #1242EF; /* Primary blue for text on accent */
     /* Destructive: Error red (distinct from primary action red) */
     --destructive: #E94343; /* Vivid error red */
     --destructive-foreground: #FAFAFA;
@@ -56,8 +56,8 @@
     --secondary-foreground: #EBEBEB;
     --muted: #262626; /* Deep muted gray */
     --muted-foreground: #A6A6A6; /* Muted gray */
-    --accent: calc(var(--primary) - 10%); /* Soft blue for dark mode */
-    --accent-foreground: #EBEBEB;
+    --accent: color-mix(in srgb, var(--primary) 15%, #1A1A1A); /* Dark blue tint */
+    --accent-foreground: #FFFFFF;
     --destructive: #EB5A5A; /* Vivid error red for dark mode */
     --destructive-foreground: #EBEBEB;
     --border: #2E2E2E; /* Subtle border */
@@ -65,10 +65,10 @@
     --ring: #1242EF; /* Primary blue for focus */
     /* Chart colors adjusted for dark mode */
     --chart-1: #1242EF; /* Primary blue */
-    --chart-2: calc(var(--primary) - 10%); /* Soft blue */
-    --chart-3: calc(var(--primary) - 20%); /* Muted blue */
-    --chart-4: calc(var(--primary) - 30%); /* Muted blue */
-    --chart-5: calc(var(--primary) - 40%); /* Muted blue */
+    --chart-2: color-mix(in srgb, var(--primary) 90%, black);
+    --chart-3: color-mix(in srgb, var(--primary) 80%, black);
+    --chart-4: color-mix(in srgb, var(--primary) 70%, black);
+    --chart-5: color-mix(in srgb, var(--primary) 60%, black);
     /* Grid pattern for subtle background - lighter for dark mode */
     --grid-color: rgba(255, 255, 255, 0.05);
   }
@@ -191,4 +191,13 @@ body {
 
 .animate-spin-slow {
   animation: spin-slow 20s linear infinite;
+}
+
+/* Trust indicator logos - ensure visibility in both light and dark modes */
+.trust-indicator-logo {
+  filter: brightness(0) saturate(100%);
+}
+
+.dark .trust-indicator-logo {
+  filter: brightness(0) saturate(100%) invert(1) !important;
 }

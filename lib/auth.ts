@@ -1,10 +1,5 @@
 import { betterAuth } from "better-auth";
-import Database from "better-sqlite3";
-import path from "path";
-
-// Initialize SQLite database
-const dbPath = path.join(process.cwd(), "sqlite.db");
-const database = new Database(dbPath);
+import { db as database } from "./db";
 
 export const auth = betterAuth({
   database,

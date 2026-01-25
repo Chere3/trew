@@ -2,20 +2,10 @@ import { ComponentType } from "react";
 import { cn } from "@/lib/utils";
 import { LucideIcon, ArrowRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import type { Task, TaskCardProps as TaskCardPropsType } from "@/lib/types";
 
-export interface Task {
-    id: string;
-    title: string;
-    description: string;
-    category: "coding" | "creative" | "analysis" | "math";
-}
-
-interface TaskCardProps {
-    task: Task;
-    recommendedModelName?: string;
-    onClick: () => void;
-    className?: string;
-}
+export type { Task }
+export type TaskCardProps = TaskCardPropsType
 
 export function TaskCard({
     task,

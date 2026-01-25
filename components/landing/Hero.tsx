@@ -1,3 +1,5 @@
+"use client";
+
 import { ArrowDown, Star, Users, TrendingUp, CheckCircle2, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
@@ -5,8 +7,97 @@ import Link from "next/link";
 import { ChatDemo } from "./ChatDemo";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import useSWR from "swr";
+import type { Model } from "@/lib/types";
+
+const fetcher = (url: string) => fetch(url).then((res) => res.json());
+
+/**
+ * Get flagship model names for display
+ */
+function getFlagshipModelNames(models: Model[]): string[] {
+  const flagshipModels = models.filter(m => m.flagship === true);
+  
+  if (flagshipModels.length === 0) return [];
+  
+  // Sort by rank if available, otherwise by name
+  const sorted = flagshipModels.sort((a, b) => {
+    if (a.rank !== undefined && b.rank !== undefined) {
+      return a.rank - b.rank;
+    }
+    return a.name.localeCompare(b.name);
+  });
+  
+  // Get top 4 model names
+  return sorted.slice(0, 4).map(m => m.name.split(" ")[1] || m.name);
+}
+
+/**
+ * Format model names for display in description
+ */
+function formatModelNamesForDescription(modelNames: string[]): string {
+  if (modelNames.length === 0) {
+    return "top AI models";
+  }
+  
+  if (modelNames.length === 1) {
+    return `${modelNames[0]} and more`;
+  }
+  
+  if (modelNames.length === 2) {
+    return `${modelNames[0]} and ${modelNames[1]}`;
+  }
+  
+  // For 3+ models, show first few and "and more"
+  const firstFew = modelNames.slice(0, 3).join(", ");
+  return `${firstFew}, and more`;
+}
+
+/**
+ * Format model names for feature checklist, ensuring GPT-4 is first
+ */
+function formatModelNamesForChecklist(modelNames: string[]): string {
+  if (modelNames.length === 0) {
+    return "Switch between GPT-4, Claude, and Gemini seamlessly";
+  }
+  
+  // Find GPT-4 model
+  const gpt4Model = modelNames.find(n => 
+    n.toLowerCase().includes('gpt-4') || 
+    n.toLowerCase().includes('gpt4') ||
+    n.toLowerCase().includes('gpt 4')
+  );
+  
+  const otherModels = modelNames.filter(n => n !== gpt4Model).slice(0, 2);
+  
+  // Always include GPT-4 first if available, otherwise prepend it
+  if (gpt4Model) {
+    if (otherModels.length > 0) {
+      return `Switch between ${gpt4Model}, ${otherModels.join(", ")}, and more seamlessly`;
+    }
+    return `Switch between ${gpt4Model} and more seamlessly`;
+  }
+  
+  // If no GPT-4 in list, prepend it
+  if (modelNames.length === 1) {
+    return `Switch between ${modelNames[0]}, and more seamlessly`;
+  }
+  
+  if (modelNames.length === 2) {
+    return `Switch between ${modelNames[0]}, ${modelNames[1]}, and more seamlessly`;
+  }
+  
+  return `Switch between ${modelNames.slice(0, 2).join(", ")}, and more seamlessly`;
+}
 
 export function Hero({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
+  // Fetch models to get flagship model names
+  const { data: modelsData } = useSWR<{ models: Model[] }>("/api/models", fetcher);
+  const availableModels = modelsData?.models || [];
+  const flagshipModelNames = getFlagshipModelNames(availableModels);
+  
+  const descriptionText = formatModelNamesForDescription(flagshipModelNames);
+  const checklistText = formatModelNamesForChecklist(flagshipModelNames);
   return (
     <section className="relative flex min-h-screen flex-col lg:flex-row items-center justify-center px-4 py-12 sm:px-6 lg:px-8 lg:py-8 overflow-hidden">
       {/* Subtle grid pattern */}
@@ -77,7 +168,7 @@ export function Hero({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
             </h1>
             
             <p className="text-base leading-relaxed text-muted-foreground md:text-lg lg:text-base mx-auto lg:mx-0 max-w-3xl">
-              Access GPT-4, Claude, Gemini, and more in one unified app. Save hundreds per month 
+              Access {descriptionText} in one unified app. Save hundreds per month 
               on multiple subscriptions. Switch between models mid-conversation—no context lost. 
               One plan. All models. Cancel anytime.
             </p>
@@ -115,7 +206,7 @@ export function Hero({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
           {/* Feature Checklist - like nomads.com */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-2xl mx-auto lg:mx-0 text-left">
             {[
-              "Switch between GPT-4, Claude, and Gemini seamlessly",
+              checklistText,
               "Cancel anytime, no commitments",
               "One plan, all AI models included",
               "Unlimited conversations and messages",

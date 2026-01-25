@@ -47,46 +47,34 @@ export const Playground: Story = {
 }
 
 export const DefaultVariant: Story = {
-  render: () => (
-    <QuickReplies
-      replies={sampleReplies}
-      variant="default"
-      onSelect={(reply) => console.log('Selected:', reply)}
-    />
-  ),
+  args: {
+    replies: sampleReplies,
+    variant: 'default',
+    onSelect: (reply) => console.log('Selected:', reply),
+  },
 }
 
 export const OutlineVariant: Story = {
-  render: () => (
-    <QuickReplies
-      replies={sampleReplies}
-      variant="outline"
-      onSelect={(reply) => console.log('Selected:', reply)}
-    />
-  ),
+  args: {
+    replies: sampleReplies,
+    variant: 'outline',
+    onSelect: (reply) => console.log('Selected:', reply),
+  },
 }
 
 export const ManyReplies: Story = {
-  render: () => (
-    <QuickReplies
-      replies={[
-        { id: '1', label: 'Option 1' },
-        { id: '2', label: 'Option 2' },
-        { id: '3', label: 'Option 3' },
-        { id: '4', label: 'Option 4' },
-        { id: '5', label: 'Option 5' },
-        { id: '6', label: 'Option 6' },
-      ]}
-      onSelect={(reply) => console.log('Selected:', reply)}
-    />
-  ),
+  args: {
+    replies: Array.from({ length: 20 }).map((_, i) => ({
+      id: String(i + 1),
+      label: `Option ${i + 1}`,
+    })),
+    onSelect: (reply) => console.log('Selected:', reply),
+  },
 }
 
 export const Empty: Story = {
-  render: () => (
-    <QuickReplies
-      replies={[]}
-      onSelect={(reply) => console.log('Selected:', reply)}
-    />
-  ),
+  args: {
+    replies: [],
+    onSelect: (reply) => console.log('Selected:', reply),
+  },
 }

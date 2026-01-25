@@ -20,19 +20,19 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 export const Default: Story = {
-  render: () => (
-    <Header>
+  args: {
+    children: (
       <div className="flex items-center justify-between w-full">
         <h1 className="text-lg font-semibold">Application</h1>
         <Button size="sm">Action</Button>
       </div>
-    </Header>
-  ),
+    )
+  },
 }
 
 export const Playground: Story = {
-  render: () => (
-    <Header>
+  args: {
+    children: (
       <div className="flex items-center justify-between w-full">
         <h1 className="text-lg font-semibold">Header Title</h1>
         <div className="flex gap-2">
@@ -40,13 +40,13 @@ export const Playground: Story = {
           <Button size="sm">Button 2</Button>
         </div>
       </div>
-    </Header>
-  ),
+    ),
+  },
 }
 
 export const WithNavigation: Story = {
-  render: () => (
-    <Header>
+  args: {
+    children: (
       <div className="flex items-center justify-between w-full">
         <nav className="flex gap-4">
           <a href="#" className="text-sm font-medium">Home</a>
@@ -55,13 +55,36 @@ export const WithNavigation: Story = {
         </nav>
         <Button size="sm">Sign In</Button>
       </div>
-    </Header>
-  ),
+    ),
+  },
 }
 
-export const WithSearch: Story = {
-  render: () => (
-    <Header>
+export const WithSearchAndNavigation: Story = {
+  args: {
+    children: (
+      <div className="flex items-center gap-4 w-full">
+        <nav className="flex gap-4">
+          <a href="#" className="text-sm font-medium">Home</a>
+          <a href="#" className="text-sm font-medium">About</a>
+          <a href="#" className="text-sm font-medium">Contact</a>
+        </nav>
+        <h1 className="text-lg font-semibold">App</h1>
+        <div className="flex-1 max-w-md">
+          <input
+            type="search"
+            placeholder="Search..."
+            className="w-full px-3 py-1.5 text-sm border rounded-md"
+          />
+        </div>
+        <Button size="sm">Sign In</Button>
+      </div>
+    ),
+  },
+}
+
+export const WithSearchAndButton: Story = {
+  args: {
+    children: (
       <div className="flex items-center gap-4 w-full">
         <h1 className="text-lg font-semibold">App</h1>
         <div className="flex-1 max-w-md">
@@ -73,6 +96,6 @@ export const WithSearch: Story = {
         </div>
         <Button size="sm">Profile</Button>
       </div>
-    </Header>
-  ),
+    ),
+  },
 }

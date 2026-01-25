@@ -1,4 +1,4 @@
-import { Meta } from '@storybook/blocks';
+import { Meta } from '@storybook/addon-docs/blocks';
 
 <Meta title="Media/Overview" />
 
@@ -12,7 +12,10 @@ Media components handle rich content display including code, markdown, images, f
 Syntax-highlighted code display with copy functionality and line numbers.
 
 ### MarkdownRenderer
-Rich markdown content rendering for AI responses.
+Rich markdown content rendering for AI responses with LaTeX math support.
+
+### LaTeXRenderer
+Standalone LaTeX math expression renderer for inline and block equations.
 
 ### ImageGallery
 Image carousel with lightbox view and navigation.
@@ -43,6 +46,19 @@ Chart wrapper component for data visualizations.
 <MarkdownRenderer content={markdownString} />
 ```
 
+MarkdownRenderer now supports LaTeX math expressions:
+- Inline math: `$E = mc^2$`
+- Block math: `$$\int_{-\infty}^{\infty} e^{-x^2} dx = \sqrt{\pi}$$`
+
+### LaTeX Math
+```tsx
+// Inline math
+<LaTeXRenderer content="E = mc^2" displayMode={false} />
+
+// Block math
+<LaTeXRenderer content="\\int_{-\\infty}^{\\infty} e^{-x^2} dx = \\sqrt{\\pi}" displayMode={true} />
+```
+
 ### Image Gallery
 ```tsx
 <ImageGallery
@@ -58,6 +74,7 @@ Chart wrapper component for data visualizations.
 - Provide alt text for all images
 - Use tables for structured data only
 - Ensure charts are accessible with proper labels
+- Use LaTeX for mathematical expressions and equations
 
 ## Accessibility
 
@@ -65,3 +82,4 @@ Chart wrapper component for data visualizations.
 - Images have descriptive alt text
 - Tables have proper headers
 - Charts include text alternatives
+- LaTeX expressions are rendered with proper semantic markup

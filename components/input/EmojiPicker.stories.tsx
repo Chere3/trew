@@ -47,10 +47,16 @@ function EmojiPickerDemo() {
 }
 
 export const Default: Story = {
+  args: {
+    onEmojiSelect: (emoji) => console.log('Selected:', emoji),
+  },
   render: () => <EmojiPickerDemo />,
 }
 
 export const WithCustomTrigger: Story = {
+  args: {
+    onEmojiSelect: (emoji) => console.log('Selected:', emoji),
+  },
   render: () => (
     <EmojiPicker
       onEmojiSelect={(emoji) => console.log('Selected:', emoji)}
@@ -63,6 +69,9 @@ export const WithCustomTrigger: Story = {
 }
 
 export const Standalone: Story = {
+  args: {
+    onEmojiSelect: (emoji) => console.log('Selected:', emoji),
+  },
   render: () => (
     <div className="flex flex-col gap-4">
       <p className="text-sm text-muted-foreground">

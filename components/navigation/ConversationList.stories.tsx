@@ -58,56 +58,37 @@ export const Playground: Story = {
 }
 
 export const WithNewButton: Story = {
-  render: () => (
-    <div className="h-[400px] w-[300px] border rounded-lg">
-      <ConversationList
-        conversations={sampleConversations}
-        onNew={() => console.log('New conversation')}
-        onSelect={(conv) => console.log('Selected:', conv)}
-      />
-    </div>
-  ),
+  args: {
+    conversations: sampleConversations,
+    onNew: () => console.log('New conversation'),
+    onSelect: (conv) => console.log('Selected:', conv),
+  },
 }
 
 export const Selected: Story = {
-  render: () => (
-    <div className="h-[400px] w-[300px] border rounded-lg">
-      <ConversationList
-        conversations={sampleConversations}
-        selectedId="2"
-        onSelect={(conv) => console.log('Selected:', conv)}
-      />
-    </div>
-  ),
+  args: {
+    conversations: sampleConversations,
+    selectedId: '2',
+    onSelect: (conv) => console.log('Selected:', conv),
+  },
 }
 
 export const Empty: Story = {
-  render: () => (
-    <div className="h-[400px] w-[300px] border rounded-lg">
-      <ConversationList
-        conversations={[]}
-        onNew={() => console.log('New conversation')}
-      />
-    </div>
-  ),
+  args: {
+    conversations: [],
+    onNew: () => console.log('New conversation'),
+  },
 }
 
 export const ManyConversations: Story = {
-  render: () => {
-    const manyConversations = Array.from({ length: 20 }).map((_, i) => ({
+  args: {
+    conversations: Array.from({ length: 20 }).map((_, i) => ({
       id: String(i + 1),
       title: `Conversation ${i + 1}`,
       preview: `Preview text for conversation ${i + 1}`,
       timestamp: new Date(Date.now() - i * 3600000),
       unread: i % 3 === 0 ? i : undefined,
-    }))
-    return (
-      <div className="h-[500px] w-[300px] border rounded-lg">
-        <ConversationList
-          conversations={manyConversations}
-          onSelect={(conv) => console.log('Selected:', conv)}
-        />
-      </div>
-    )
+    })),
+    onSelect: (conv) => console.log('Selected:', conv),
   },
 }

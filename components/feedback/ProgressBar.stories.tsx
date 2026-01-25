@@ -46,28 +46,49 @@ export const Playground: Story = {
 }
 
 export const WithLabel: Story = {
-  render: () => (
-    <div className="space-y-4 w-full max-w-md">
-      <ProgressBar value={25} label="Upload Progress" />
-      <ProgressBar value={50} label="Download Progress" />
-      <ProgressBar value={75} label="Processing" />
-    </div>
-  ),
+  args: {
+    value: 50,
+    max: 100,
+    label: 'Progress',
+    showValue: true,
+    variant: 'default',
+  },
 }
 
 export const Variants: Story = {
-  render: () => (
-    <div className="space-y-4 w-full max-w-md">
-      <ProgressBar value={60} label="Default" variant="default" />
-      <ProgressBar value={80} label="Success" variant="success" />
-      <ProgressBar value={40} label="Warning" variant="warning" />
-      <ProgressBar value={20} label="Error" variant="error" />
-    </div>
-  ),
+  args: {
+    value: 50,
+    max: 100,
+    label: 'Progress',
+    showValue: true,
+    variant: 'default',
+  },
 }
 
-export const WithoutValue: Story = {
-  render: () => (
-    <ProgressBar value={65} label="Progress" showValue={false} />
-  ),
+export const Success: Story = {
+  args: {
+    value: 50,
+    max: 100,
+    label: 'Progress',
+    showValue: true,
+    variant: 'success',
+  },
+}
+
+export const Error: Story = {
+  args: {
+    value: 65,
+    label: 'Progress',
+    showValue: false,
+    variant: 'error',
+  },
+}
+
+export const Warning: Story = {
+  args: {
+    value: 65,
+    label: 'Progress',
+    showValue: false,
+    variant: 'warning',
+  },
 }

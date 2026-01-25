@@ -31,31 +31,40 @@ export const Playground: Story = {
 }
 
 export const Today: Story = {
-  render: () => <DateSeparator date={new Date()} />,
+  args: {
+    date: new Date(),
+  },
 }
 
 export const Yesterday: Story = {
-  render: () => {
-    const yesterday = new Date()
-    yesterday.setDate(yesterday.getDate() - 1)
-    return <DateSeparator date={yesterday} />
+  args: {
+    date: (() => {
+      const yesterday = new Date()
+      yesterday.setDate(yesterday.getDate() - 1)
+      return yesterday
+    })(),
   },
 }
 
 export const PastDate: Story = {
-  render: () => {
-    const pastDate = new Date()
-    pastDate.setDate(pastDate.getDate() - 7)
-    return <DateSeparator date={pastDate} />
+  args: {
+    date: (() => {
+      const pastDate = new Date()
+      pastDate.setDate(pastDate.getDate() - 7)
+      return pastDate
+    })(),
   },
 }
 
 export const InConversation: Story = {
-  render: () => (
+  args: {
+    date: new Date(),
+  },
+  render: (args) => (
     <div className="space-y-4">
       <DateSeparator date={new Date(Date.now() - 172800000)} />
       <p className="text-sm">Previous messages...</p>
-      <DateSeparator date={new Date()} />
+      <DateSeparator date={args.date} />
       <p className="text-sm">Today's messages...</p>
     </div>
   ),

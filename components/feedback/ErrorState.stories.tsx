@@ -33,26 +33,29 @@ export const Playground: Story = {
 }
 
 export const WithRetry: Story = {
-  render: () => (
-    <ErrorState
-      message="Failed to load data. Please try again."
-      onRetry={() => console.log('Retry')}
-    />
-  ),
+  args: {
+    message: 'Failed to load data. Please try again.',
+    onRetry: () => console.log('Retry clicked'),
+  },
 }
 
 export const WithoutRetry: Story = {
-  render: () => (
-    <ErrorState message="An unexpected error occurred." />
-  ),
+  args: {
+    message: 'An unexpected error occurred.',
+  },
 }
 
-export const CustomTitle: Story = {
-  render: () => (
-    <ErrorState
-      title="Connection Failed"
-      message="Unable to connect to the server. Please check your internet connection."
-      onRetry={() => console.log('Retry')}
-    />
-  ),
+export const CustomTitleAndRetry: Story = {
+  args: {
+    title: 'Connection Failed',
+    message: 'Unable to connect to the server. Please check your internet connection.',
+    onRetry: () => console.log('Retry clicked'),
+  },
+}
+
+export const CustomTitleAndMessage: Story = {
+  args: {
+    title: 'Connection Failed',
+    message: 'Unable to connect to the server. Please check your internet connection.',
+  },
 }

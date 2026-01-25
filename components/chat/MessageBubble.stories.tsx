@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react'
 import { MessageBubble } from './MessageBubble'
+import { expect, userEvent, within } from '@storybook/test'
 
 const meta = {
   title: 'Chat/MessageBubble',

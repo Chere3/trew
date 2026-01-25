@@ -7,35 +7,35 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Sparkles, Bot, Brain, ChevronDown, Check, Loader2, Zap, Code, Cpu, Search, X, Star } from "lucide-react";
+import { Sparkles, Bot, Brain, ChevronDown, Check, Loader2, Zap, Code, Cpu, Search, X, Star, Wand2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { LucideIcon } from "lucide-react";
 import { getProviderConfig, normalizeProviderName } from "@/lib/models/providers";
 import { ModelCard } from "./ModelCard";
+import type { Model } from "@/lib/types";
+import { AUTO_MODEL_ID, PROVIDER_NAMES, MODEL_SPEED_FAST } from "@/lib/constants";
 
-export interface Model {
-  id: string;
-  name: string;
-  provider: string;
-  icon: string; // Icon name as string for serialization
-  color: string;
-  description?: string;
-  capabilities?: {
-    contextWindow?: string;
-    speed?: "fast" | "medium" | "slow";
-    specialty?: string[];
-  };
-  flagship?: boolean;
-  rank?: number;
-  intelligenceIndex?: number;
-  codingIndex?: number;
-  mathIndex?: number;
-  openrouterId?: string;
-  canonicalSlug?: string;
-}
+export type { Model }
+
+// Auto model - always available
+export const AUTO_MODEL: Model = {
+  id: AUTO_MODEL_ID,
+  name: "Auto",
+  provider: PROVIDER_NAMES.TREW,
+  icon: "Wand2",
+  color: "text-primary",
+  description: "Intelligently selects the best model for your task",
+  flagship: true,
+  capabilities: {
+    contextWindow: "Varies",
+    speed: MODEL_SPEED_FAST,
+    specialty: ["Smart Routing", "Adaptive"],
+  },
+};
 
 // Fallback models if API fails
 export const AVAILABLE_MODELS: Model[] = [
+  AUTO_MODEL,
   {
     id: "gpt-5o",
     name: "GPT-5o",
@@ -88,6 +88,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   Zap,
   Code,
   Cpu,
+  Wand2,
 };
 
 function getIconComponent(iconName: string): LucideIcon {
@@ -101,7 +102,7 @@ export interface ModelSelectorProps {
 }
 
 export function ModelSelector({
-  selectedModelId = "gpt-5o",
+  selectedModelId = AUTO_MODEL_ID,
   onModelChange,
   className,
 }: ModelSelectorProps) {
@@ -125,7 +126,8 @@ export function ModelSelector({
 
         const data = await response.json();
         if (data.models && Array.isArray(data.models) && data.models.length > 0) {
-          setModels(data.models);
+          // Always prepend Auto model to API results
+          setModels([AUTO_MODEL, ...data.models.filter((m: Model) => m.id !== AUTO_MODEL_ID)]);
         } else {
           // Fallback to default models if API returns empty
           setModels(AVAILABLE_MODELS);
@@ -162,11 +164,19 @@ export function ModelSelector({
   }, [models, searchQuery]);
 
   // Group models by provider and separate flagship from non-flagship
+  // Also extract Auto model for special display
   const groupedModels = useMemo(() => {
     const flagshipByProvider = new Map<string, Model[]>();
     const nonFlagship: Model[] = [];
+    let autoModel: Model | null = null;
 
     filteredModels.forEach((model) => {
+      // Extract Auto model separately
+      if (model.id === AUTO_MODEL_ID) {
+        autoModel = model;
+        return;
+      }
+
       if (model.flagship) {
         const normalizedProvider = normalizeProviderName(model.provider);
         if (!flagshipByProvider.has(normalizedProvider)) {
@@ -195,7 +205,7 @@ export function ModelSelector({
       return a.name.localeCompare(b.name);
     });
 
-    return { flagshipByProvider, nonFlagship };
+    return { flagshipByProvider, nonFlagship, autoModel };
   }, [filteredModels]);
 
   // Clear search when popover closes
@@ -313,6 +323,38 @@ export function ModelSelector({
                     </div>
                   ) : (
                     <div className="flex flex-col gap-6 p-5 pr-6">
+                      {/* Smart Routing Section - Auto Model */}
+                      {groupedModels.autoModel && (
+                        <div className="flex flex-col gap-3">
+                          {/* Smart Routing Header */}
+                          <div className="flex items-center gap-2.5 px-1 py-1">
+                            <div className={cn(
+                              "flex items-center justify-center w-6 h-6 rounded-md",
+                              "bg-primary/10",
+                              "border border-primary/20"
+                            )}>
+                              <Wand2 className="h-3.5 w-3.5 text-primary" />
+                            </div>
+                            <h2 className="text-sm font-semibold text-foreground/80 tracking-tight">
+                              Smart Routing
+                            </h2>
+                            <div className="flex-1 h-px bg-gradient-to-r from-primary/20 to-transparent ml-2" />
+                          </div>
+
+                          {/* Auto Model Card */}
+                          <div className="grid grid-cols-1 gap-3">
+                            <ModelCard
+                              model={groupedModels.autoModel}
+                              isSelected={selectedModelId === AUTO_MODEL_ID}
+                              onClick={() => {
+                                onModelChange?.(AUTO_MODEL_ID);
+                                setOpen(false);
+                              }}
+                            />
+                          </div>
+                        </div>
+                      )}
+
                       {/* Provider Sections with Flagship Models */}
                       {Array.from(groupedModels.flagshipByProvider.entries())
                         .sort(([a], [b]) => {

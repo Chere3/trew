@@ -86,7 +86,7 @@ export const WithAttachments: Story = {
           const newAttachments = files.map((file, i) => ({
             id: `${Date.now()}-${i}`,
             file,
-            type: file.type.startsWith('image/') ? 'image' : 'file',
+            type: file.type.startsWith('image/') ? ('image' as const) : ('document' as const),
           }))
           setAttachments([...attachments, ...newAttachments])
         }}

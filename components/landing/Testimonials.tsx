@@ -49,7 +49,7 @@ const testimonials: Testimonial[] = [
     avatarImage: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=faces",
   },
   {
-    quote: "As a startup founder, cost matters. Trew replaced my $60/month in multiple subscriptions with one $29 plan. Best ROI decision I made this quarter.",
+    quote: "As a startup founder, cost matters. Trew replaced my $60/month in multiple subscriptions with one $30 plan. Best ROI decision I made this quarter.",
     author: "James Park",
     role: "Co-Founder",
     company: "InnovateAI",

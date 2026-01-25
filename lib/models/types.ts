@@ -61,26 +61,5 @@ export interface ArtificialAnalysisModelsResponse {
   data: ArtificialAnalysisModel[];
 }
 
-// Extended Model interface with OpenRouter-specific fields
-export interface Model {
-  id: string;
-  name: string;
-  provider: string;
-  icon: string; // Icon component name instead of actual component for serialization
-  color: string;
-  description?: string;
-  capabilities?: {
-    contextWindow?: string;
-    speed?: "fast" | "medium" | "slow";
-    specialty?: string[];
-  };
-  // Artificial Analysis fields
-  flagship?: boolean;
-  rank?: number;
-  intelligenceIndex?: number;
-  codingIndex?: number;
-  mathIndex?: number;
-  // OpenRouter fields
-  openrouterId?: string;
-  canonicalSlug?: string;
-}
+// Re-export Model type from centralized types file
+export type { Model } from "@/lib/types";

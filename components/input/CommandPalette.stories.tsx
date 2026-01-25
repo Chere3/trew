@@ -53,6 +53,12 @@ const sampleCommands = [
 ]
 
 export const Default: Story = {
+  args: {
+    commands: sampleCommands,
+    open: false,
+    onOpenChange: (open) => console.log('Open:', open),
+    onSelect: (cmd) => console.log('Selected:', cmd),
+  },
   render: () => {
     const [open, setOpen] = useState(false)
     return (
@@ -70,6 +76,13 @@ export const Default: Story = {
 }
 
 export const Playground: Story = {
+  args: {
+    commands: sampleCommands,
+    open: false,
+    onOpenChange: (open) => console.log('Open:', open),
+    onSelect: (cmd) => console.log('Selected:', cmd),
+    placeholder: 'Type a command...',
+  },
   render: () => {
     const [open, setOpen] = useState(false)
     return (
@@ -88,24 +101,13 @@ export const Playground: Story = {
 }
 
 export const ManyCommands: Story = {
-  render: () => {
-    const [open, setOpen] = useState(false)
-    const manyCommands = Array.from({ length: 20 }).map((_, i) => ({
+  args: {
+    commands: Array.from({ length: 20 }).map((_, i) => ({
       id: String(i + 1),
       label: `Command ${i + 1}`,
       description: `Description for command ${i + 1}`,
       keywords: [`cmd${i + 1}`, `option${i + 1}`],
     }))
-    return (
-      <>
-        <Button onClick={() => setOpen(true)}>Open</Button>
-        <CommandPalette
-          commands={manyCommands}
-          open={open}
-          onOpenChange={setOpen}
-          onSelect={(cmd) => console.log('Selected:', cmd)}
-        />
-      </>
-    )
+
   },
 }
