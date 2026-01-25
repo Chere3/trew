@@ -29,6 +29,7 @@
     "@radix-ui/react-switch": "^1.2.6",
     "@radix-ui/react-tabs": "^1.1.13",
     "@radix-ui/react-tooltip": "^1.2.8",
+    "@storybook/react-vite": "^10.2.0",
     "@storybook/test": "^8.6.15",
     "@tanstack/react-virtual": "^3.13.18",
     "@types/better-sqlite3": "^7.6.13",
