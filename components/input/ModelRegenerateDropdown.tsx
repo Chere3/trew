@@ -120,7 +120,6 @@ export function ModelRegenerateDropdown({
         )}
         align="end"
         sideOffset={8}
-        onOpenAutoFocus={(e) => e.preventDefault()}
       >
         <div className="flex flex-col gap-0">
           {/* Search Input */}
