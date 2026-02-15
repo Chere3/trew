@@ -38,7 +38,10 @@ interface ChatData {
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 export function ChatInterface() {
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.matchMedia("(max-width: 768px)").matches;
+  });
   const [selectedModel, setSelectedModel] = useState(AUTO_MODEL_ID);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
@@ -879,7 +882,7 @@ export function ChatInterface() {
 
       <div className="flex min-w-0 flex-1 flex-col h-full relative">
         {/* Top Header */}
-        <header className="flex h-14 items-center justify-between gap-4 px-6 border-b border-border/30 bg-background/50 backdrop-blur-sm sticky top-0 z-10">
+        <header className="flex h-14 items-center justify-between gap-4 px-4 sm:px-6 border-b border-border/30 bg-background/50 backdrop-blur-sm sticky top-0 z-10">
           <div className="flex items-center gap-2">
              {!modelsData ? (
                 <ModelSelectorSkeleton />
@@ -897,7 +900,7 @@ export function ChatInterface() {
 
         {/* Messages */}
         <div className="flex-1 overflow-y-auto min-h-0 scrollbar-hide" ref={messagesContainerRef}>
-          <div className="max-w-3xl mx-auto w-full h-full flex flex-col">
+          <div className="max-w-3xl mx-auto w-full h-full flex flex-col px-4 sm:px-6">
               {!conversationId && messages.length === 0 ? (
                 <NewChatPage
                   onModelSelect={setSelectedModel}
@@ -905,7 +908,7 @@ export function ChatInterface() {
                 />
               ) : (
                 <MessageList 
-                  className="pb-44 pt-6" // Extra bottom padding so composer never overlaps message actions
+                  className="pb-40 sm:pb-44 pt-5 sm:pt-6" // Extra bottom padding so composer never overlaps message actions
                   messages={messages}
                   isLoadingOlder={isLoadingOlder}
                   hasMore={hasMore}
