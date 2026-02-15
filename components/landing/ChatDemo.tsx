@@ -9,20 +9,18 @@ type Message = {
   role: "user" | "assistant";
   content: string;
   model?: string;
-  modelColor?: string;
 };
 
 type DemoStep = {
   type: "user" | "assistant" | "switch";
   content?: string;
   model?: string;
-  modelColor?: string;
 };
 
 const MODELS = {
-  gpt4: { name: "GPT-4o", color: "text-emerald-600 dark:text-emerald-400" },
-  claude: { name: "Claude 3.5", color: "text-amber-600 dark:text-amber-400" },
-  gemini: { name: "Gemini Pro", color: "text-rose-600 dark:text-rose-400" },
+  gpt4: { name: "GPT-4o" },
+  claude: { name: "Claude 3.5" },
+  gemini: { name: "Gemini Pro" },
 };
 
 const DEMO_SCRIPT: DemoStep[] = [
@@ -31,7 +29,6 @@ const DEMO_SCRIPT: DemoStep[] = [
     type: "assistant",
     content: "Here's a clean function to parse JSON safely:\n\n```python\nimport json\n\ndef parse_json(data: str) -> dict:\n    try:\n        return json.loads(data)\n    except json.JSONDecodeError:\n        return {}\n```",
     model: "gpt4",
-    modelColor: MODELS.gpt4.color,
   },
   { type: "user", content: "Now review it for edge cases" },
   { type: "switch", model: "claude" },
@@ -39,7 +36,6 @@ const DEMO_SCRIPT: DemoStep[] = [
     type: "assistant",
     content: "Good start! Consider these improvements:\n\n1. Handle `None` input\n2. Add type hints for return\n3. Log errors for debugging\n4. Consider returning `Optional[dict]`",
     model: "claude",
-    modelColor: MODELS.claude.color,
   },
   { type: "user", content: "Summarize the key changes" },
   { type: "switch", model: "gemini" },
@@ -47,7 +43,6 @@ const DEMO_SCRIPT: DemoStep[] = [
     type: "assistant",
     content: "Key improvements: null-safety, better typing, error logging, and explicit Optional return type for clearer API contracts.",
     model: "gemini",
-    modelColor: MODELS.gemini.color,
   },
 ];
 
@@ -75,7 +70,7 @@ function MessageBubble({ message, isTyping }: { message: Message; isTyping?: boo
         {isUser ? (
           <User className="h-4 w-4 text-muted-foreground" />
         ) : (
-          <Bot className={cn("h-4 w-4", message.modelColor || "text-muted-foreground")} />
+          <Bot className="h-4 w-4 text-muted-foreground" />
         )}
       </div>
 
@@ -112,11 +107,11 @@ function ModelSwitchIndicator({ from, to }: { from: string; to: string }) {
   const toModel = MODELS[to as keyof typeof MODELS];
 
   return (
-    <div className="flex items-center justify-center gap-2 py-2">
-      <div className="flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 text-xs">
-        <span className={cn("font-medium", fromModel?.color)}>{fromModel?.name}</span>
-        <ArrowRight className="h-3 w-3 text-muted-foreground" />
-        <span className={cn("font-medium", toModel?.color)}>{toModel?.name}</span>
+    <div className="flex items-center justify-center py-2">
+      <div className="flex items-center gap-2 rounded-full border border-border bg-muted/30 px-3 py-1.5 text-xs text-muted-foreground">
+        <span className="text-foreground/70">{fromModel?.name}</span>
+        <ArrowRight className="h-3 w-3" />
+        <span className="text-foreground/70">{toModel?.name}</span>
       </div>
     </div>
   );
@@ -175,17 +170,12 @@ export function ChatDemo() {
       }, 800);
     } else if (step.type === "assistant") {
       setIsTyping(true);
-      setMessages((prev) => [
-        ...prev,
-        { id: `msg-${stepIndex}`, role: "assistant", content: "", model: step.model, modelColor: step.modelColor },
-      ]);
+      setMessages((prev) => [...prev, { id: `msg-${stepIndex}`, role: "assistant", content: "", model: step.model }]);
 
       timeout = setTimeout(() => {
         setIsTyping(false);
         setMessages((prev) =>
-          prev.map((m) =>
-            m.id === `msg-${stepIndex}` ? { ...m, content: step.content! } : m
-          )
+          prev.map((m) => (m.id === `msg-${stepIndex}` ? { ...m, content: step.content! } : m))
         );
         setStepIndex((i) => i + 1);
       }, 1500);
@@ -203,11 +193,13 @@ export function ChatDemo() {
       {/* Header */}
       <div className="flex items-center justify-between border-b border-border px-4 py-2.5">
         <div className="flex items-center gap-2">
-          <Bot className={cn("h-4 w-4", MODELS[currentModel as keyof typeof MODELS]?.color)} />
-          <span className="text-sm font-medium text-foreground">
-            {MODELS[currentModel as keyof typeof MODELS]?.name}
-          </span>
-          <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+          <div className="flex items-center gap-2 rounded-full border border-border bg-muted/30 px-3 py-1.5">
+            <Bot className="h-3.5 w-3.5 text-muted-foreground" />
+            <span className="text-xs font-medium text-foreground/80">
+              {MODELS[currentModel as keyof typeof MODELS]?.name}
+            </span>
+            <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+          </div>
         </div>
         <div className="flex items-center gap-1">
           <span className="h-2 w-2 rounded-full bg-primary/40" />
@@ -230,11 +222,13 @@ export function ChatDemo() {
       </div>
 
       {/* Input (decorative) */}
-      <div className="border-t border-border px-4 py-3">
-        <div className="flex items-center gap-3 rounded-lg border border-border bg-muted/30 px-3 py-2">
-          <span className="flex-1 text-sm text-muted-foreground">Message Trew...</span>
-          <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary/10">
-            <ArrowRight className="h-3.5 w-3.5 text-primary" />
+      <div className="border-t border-border bg-background px-4 py-3">
+        <div className="flex items-end gap-2 rounded-2xl border border-border bg-card px-3 py-2 shadow-soft">
+          <div className="flex-1 rounded-xl bg-muted/30 px-3 py-2">
+            <div className="h-4 w-40 rounded bg-muted-foreground/15" />
+          </div>
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
+            <ArrowRight className="h-4 w-4" />
           </div>
         </div>
       </div>
