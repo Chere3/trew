@@ -4,6 +4,14 @@ import { useState, useEffect, useRef } from "react";
 import { Bot, User, ChevronDown, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+type ApiModel = {
+  id: string;
+  name: string;
+  provider: string;
+  flagship?: boolean;
+  rank?: number | null;
+};
+
 type Message = {
   id: string;
   role: "user" | "assistant";
@@ -17,32 +25,41 @@ type DemoStep = {
   model?: string;
 };
 
-const MODELS = {
-  gpt4: { name: "GPT-4o" },
-  claude: { name: "Claude 3.5" },
-  gemini: { name: "Gemini Pro" },
+type DemoModel = {
+  id: string;
+  name: string;
+  provider: string;
 };
+
+const FALLBACK_MODELS: DemoModel[] = [
+  { id: "openai/gpt-4o", name: "GPT-4o", provider: "openai" },
+  { id: "anthropic/claude-3.7-sonnet", name: "Claude 3.7 Sonnet", provider: "anthropic" },
+  { id: "google/gemini-2.0-pro", name: "Gemini 2.0 Pro", provider: "google" },
+];
 
 const DEMO_SCRIPT: DemoStep[] = [
   { type: "user", content: "Help me write a Python function to parse JSON" },
   {
     type: "assistant",
-    content: "Here's a clean function to parse JSON safely:\n\n```python\nimport json\n\ndef parse_json(data: str) -> dict:\n    try:\n        return json.loads(data)\n    except json.JSONDecodeError:\n        return {}\n```",
-    model: "gpt4",
+    content:
+      "Here's a clean function to parse JSON safely:\n\n```python\nimport json\n\ndef parse_json(data: str) -> dict:\n    try:\n        return json.loads(data)\n    except json.JSONDecodeError:\n        return {}\n```",
+    model: "m0",
   },
   { type: "user", content: "Now review it for edge cases" },
-  { type: "switch", model: "claude" },
+  { type: "switch", model: "m1" },
   {
     type: "assistant",
-    content: "Good start! Consider these improvements:\n\n1. Handle `None` input\n2. Add type hints for return\n3. Log errors for debugging\n4. Consider returning `Optional[dict]`",
-    model: "claude",
+    content:
+      "Good start! Consider these improvements:\n\n1. Handle `None` input\n2. Add type hints for return\n3. Log errors for debugging\n4. Consider returning `Optional[dict]`",
+    model: "m1",
   },
   { type: "user", content: "Summarize the key changes" },
-  { type: "switch", model: "gemini" },
+  { type: "switch", model: "m2" },
   {
     type: "assistant",
-    content: "Key improvements: null-safety, better typing, error logging, and explicit Optional return type for clearer API contracts.",
-    model: "gemini",
+    content:
+      "Key improvements: null-safety, better typing, error logging, and explicit Optional return type for clearer API contracts.",
+    model: "m2",
   },
 ];
 
@@ -56,7 +73,15 @@ function TypingIndicator() {
   );
 }
 
-function MessageBubble({ message, isTyping }: { message: Message; isTyping?: boolean }) {
+function MessageBubble({
+  message,
+  isTyping,
+  modelLabel,
+}: {
+  message: Message;
+  isTyping?: boolean;
+  modelLabel?: string;
+}) {
   const isUser = message.role === "user";
 
   return (
@@ -75,11 +100,9 @@ function MessageBubble({ message, isTyping }: { message: Message; isTyping?: boo
       </div>
 
       <div className={cn("flex max-w-[85%] flex-col min-w-0", isUser ? "items-end" : "items-start")}>
-        {!isUser && message.model ? (
-          <div className={cn("mb-1.5 flex items-center gap-2", isUser ? "flex-row-reverse" : "flex-row")}>
-            <span className="text-xs font-medium text-foreground/70">
-              {MODELS[message.model as keyof typeof MODELS]?.name}
-            </span>
+        {!isUser && modelLabel ? (
+          <div className="mb-1.5 flex items-center gap-2">
+            <span className="text-xs font-medium text-foreground/70">{modelLabel}</span>
           </div>
         ) : null}
 
@@ -102,9 +125,9 @@ function MessageBubble({ message, isTyping }: { message: Message; isTyping?: boo
   );
 }
 
-function ModelSwitchIndicator({ from, to }: { from: string; to: string }) {
-  const fromModel = MODELS[from as keyof typeof MODELS];
-  const toModel = MODELS[to as keyof typeof MODELS];
+function ModelSwitchIndicator({ from, to, models }: { from: number; to: number; models: DemoModel[] }) {
+  const fromModel = models[from];
+  const toModel = models[to];
 
   return (
     <div className="flex items-center justify-center py-2">
@@ -119,12 +142,16 @@ function ModelSwitchIndicator({ from, to }: { from: string; to: string }) {
 
 export function ChatDemo() {
   const [messages, setMessages] = useState<Message[]>([]);
-  const [currentModel, setCurrentModel] = useState("gpt4");
+  const [demoModels, setDemoModels] = useState<DemoModel[]>(FALLBACK_MODELS);
+  const [currentModelIndex, setCurrentModelIndex] = useState(0);
   const [stepIndex, setStepIndex] = useState(0);
   const [isTyping, setIsTyping] = useState(false);
-  const [showSwitch, setShowSwitch] = useState<{ from: string; to: string } | null>(null);
+  const [showSwitch, setShowSwitch] = useState<{ from: number; to: number } | null>(null);
   const [isInView, setIsInView] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  const currentModel = demoModels[currentModelIndex] || demoModels[0];
+
   // Intersection observer
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -135,16 +162,57 @@ export function ChatDemo() {
     return () => observer.disconnect();
   }, []);
 
+  useEffect(() => {
+    if (!isInView) return;
+
+    let cancelled = false;
+
+    async function loadModels() {
+      try {
+        const res = await fetch("/api/models");
+        if (!res.ok) return;
+        const json = (await res.json()) as { models?: ApiModel[] };
+        const models = Array.isArray(json.models) ? json.models : [];
+
+        const sorted = [...models].sort((a, b) => {
+          const aRank = a.rank ?? Number.POSITIVE_INFINITY;
+          const bRank = b.rank ?? Number.POSITIVE_INFINITY;
+          return aRank - bRank;
+        });
+
+        const flagship = sorted.filter((m) => m.flagship);
+        const picked = (flagship.length ? flagship : sorted).slice(0, 3);
+        if (!picked.length) return;
+
+        const next: DemoModel[] = picked.map((m) => ({ id: m.id, name: m.name, provider: m.provider }));
+        if (!cancelled) setDemoModels(next);
+      } catch {
+        // fail-open to fallback models
+      }
+    }
+
+    void loadModels();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isInView]);
+
+  const resolveStepModelIndex = (token?: string) => {
+    if (token === "m1") return 1;
+    if (token === "m2") return 2;
+    return 0;
+  };
+
   // Animation loop
   useEffect(() => {
     if (!isInView) return;
 
     const step = DEMO_SCRIPT[stepIndex];
     if (!step) {
-      // Reset after pause
       const timeout = setTimeout(() => {
         setMessages([]);
-        setCurrentModel("gpt4");
+        setCurrentModelIndex(0);
         setStepIndex(0);
         setShowSwitch(null);
       }, 3000);
@@ -154,35 +222,32 @@ export function ChatDemo() {
     let timeout: NodeJS.Timeout;
 
     if (step.type === "switch") {
-      setShowSwitch({ from: currentModel, to: step.model! });
+      const toIndex = resolveStepModelIndex(step.model);
+      setShowSwitch({ from: currentModelIndex, to: toIndex });
       timeout = setTimeout(() => {
-        setCurrentModel(step.model!);
+        setCurrentModelIndex(toIndex);
         setShowSwitch(null);
         setStepIndex((i) => i + 1);
       }, 1200);
     } else if (step.type === "user") {
       timeout = setTimeout(() => {
-        setMessages((prev) => [
-          ...prev,
-          { id: `msg-${stepIndex}`, role: "user", content: step.content! },
-        ]);
+        setMessages((prev) => [...prev, { id: `msg-${stepIndex}`, role: "user", content: step.content! }]);
         setStepIndex((i) => i + 1);
       }, 800);
     } else if (step.type === "assistant") {
+      const modelIndex = resolveStepModelIndex(step.model);
       setIsTyping(true);
-      setMessages((prev) => [...prev, { id: `msg-${stepIndex}`, role: "assistant", content: "", model: step.model }]);
+      setMessages((prev) => [...prev, { id: `msg-${stepIndex}`, role: "assistant", content: "", model: `m${modelIndex}` }]);
 
       timeout = setTimeout(() => {
         setIsTyping(false);
-        setMessages((prev) =>
-          prev.map((m) => (m.id === `msg-${stepIndex}` ? { ...m, content: step.content! } : m))
-        );
+        setMessages((prev) => prev.map((m) => (m.id === `msg-${stepIndex}` ? { ...m, content: step.content! } : m)));
         setStepIndex((i) => i + 1);
       }, 1500);
     }
 
     return () => clearTimeout(timeout);
-  }, [stepIndex, isInView, currentModel]);
+  }, [stepIndex, isInView, currentModelIndex]);
 
   return (
     <div
@@ -195,9 +260,7 @@ export function ChatDemo() {
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-2 rounded-full border border-border bg-muted/30 px-3 py-1.5">
             <Bot className="h-3.5 w-3.5 text-muted-foreground" />
-            <span className="text-xs font-medium text-foreground/80">
-              {MODELS[currentModel as keyof typeof MODELS]?.name}
-            </span>
+            <span className="text-xs font-medium text-foreground/80">{currentModel?.name}</span>
             <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
           </div>
         </div>
@@ -214,10 +277,15 @@ export function ChatDemo() {
             <MessageBubble
               key={message.id}
               message={message}
+              modelLabel={
+                message.role === "assistant"
+                  ? demoModels[resolveStepModelIndex(message.model)]?.name
+                  : undefined
+              }
               isTyping={isTyping && index === messages.length - 1 && message.role === "assistant"}
             />
           ))}
-          {showSwitch && <ModelSwitchIndicator from={showSwitch.from} to={showSwitch.to} />}
+          {showSwitch && <ModelSwitchIndicator from={showSwitch.from} to={showSwitch.to} models={demoModels} />}
         </div>
       </div>
 
