@@ -126,8 +126,6 @@ export function ChatDemo() {
   const [showSwitch, setShowSwitch] = useState<{ from: string; to: string } | null>(null);
   const [isInView, setIsInView] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-
   // Intersection observer
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -137,11 +135,6 @@ export function ChatDemo() {
     if (containerRef.current) observer.observe(containerRef.current);
     return () => observer.disconnect();
   }, []);
-
-  // Auto-scroll
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, isTyping, showSwitch]);
 
   // Animation loop
   useEffect(() => {
@@ -220,7 +213,7 @@ export function ChatDemo() {
 
       {/* Messages */}
       <div className="flex-1 overflow-hidden px-4 py-4">
-        <div className="space-y-4">
+        <div className="flex h-full flex-col justify-end space-y-4">
           {messages.map((message, index) => (
             <MessageBubble
               key={message.id}
@@ -229,7 +222,6 @@ export function ChatDemo() {
             />
           ))}
           {showSwitch && <ModelSwitchIndicator from={showSwitch.from} to={showSwitch.to} />}
-          <div ref={messagesEndRef} />
         </div>
       </div>
 
