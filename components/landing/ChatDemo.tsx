@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Bot, User, ChevronDown, ArrowRight } from "lucide-react";
+import { Bot, User, ChevronDown, ArrowRight, BrainCircuit, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type ApiModel = {
@@ -79,16 +79,27 @@ function TypingIndicator() {
   );
 }
 
-function ThinkingIndicator({ text }: { text: string }) {
+function ThinkingCollapsible({ content, isStreaming }: { content: string; isStreaming?: boolean }) {
+  if (!content) return null;
+
   return (
-    <div className="space-y-2">
-      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-        <span className="inline-flex h-1.5 w-1.5 animate-pulse rounded-full bg-muted-foreground/60" />
-        <span>Reasoning (summary)</span>
+    <div className="mb-2 max-w-[85%] sm:max-w-[75%] ml-10">
+      <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground/75 mb-2 select-none">
+        <div className={cn("-ml-0.5 p-1 rounded-md bg-muted/50", isStreaming && "animate-pulse")}>
+          <BrainCircuit className={cn("w-3.5 h-3.5", isStreaming && "animate-[spin_2.4s_linear_infinite]")} />
+        </div>
+        <span>{isStreaming ? "Thinking..." : "Thought Process"}</span>
+        {isStreaming && <span className="text-[10px] animate-pulse opacity-70">●</span>}
+        <ChevronDown className="w-3.5 h-3.5 opacity-50" />
       </div>
-      <div className="text-sm leading-relaxed text-muted-foreground">
-        <span className="whitespace-pre-wrap">{text}</span>
-        <span className="ml-0.5 inline-block h-4 w-1 animate-pulse align-middle bg-muted-foreground/40" />
+
+      <div className="overflow-hidden">
+        <div className="relative pl-4 border-l-2 border-border/40 ml-2 my-2">
+          <div className="text-sm text-muted-foreground/60 italic max-h-[220px] overflow-y-auto pr-2 custom-scrollbar">
+            <span className="whitespace-pre-wrap text-xs">{content}</span>
+            {isStreaming ? <span className="ml-1 text-[10px] animate-pulse opacity-70">●</span> : null}
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -97,12 +108,10 @@ function ThinkingIndicator({ text }: { text: string }) {
 function MessageBubble({
   message,
   isTyping,
-  isThinking,
   modelLabel,
 }: {
   message: Message;
   isTyping?: boolean;
-  isThinking?: boolean;
   modelLabel?: string;
 }) {
   const isUser = message.role === "user";
@@ -137,13 +146,7 @@ function MessageBubble({
               : "bg-card text-foreground rounded-bl-sm border border-border/60 shadow-soft"
           )}
         >
-          {isTyping ? (
-            <TypingIndicator />
-          ) : isThinking ? (
-            <ThinkingIndicator text={message.content} />
-          ) : (
-            <span className="whitespace-pre-wrap">{message.content}</span>
-          )}
+          {isTyping ? <TypingIndicator /> : <span className="whitespace-pre-wrap">{message.content}</span>}
         </div>
       </div>
     </div>
@@ -231,16 +234,14 @@ export function ChatDemo() {
     return 0;
   };
 
-  const startThinkingReveal = (messageId: string, fullText: string) => {
+  const startThinkingReveal = (fullText: string) => {
     setThinkingText("");
-    setMessages((prev) => prev.map((m) => (m.id === messageId ? { ...m, content: "" } : m)));
 
     let i = 0;
     const interval = setInterval(() => {
       i += 2;
       const next = fullText.slice(0, i);
       setThinkingText(next);
-      setMessages((prev) => prev.map((m) => (m.id === messageId ? { ...m, content: next } : m)));
       if (i >= fullText.length) clearInterval(interval);
     }, 24);
 
@@ -260,6 +261,7 @@ export function ChatDemo() {
         setShowSwitch(null);
         setIsTyping(false);
         setIsThinking(false);
+        setThinkingText("");
       }, 3000);
       return () => clearTimeout(timeout);
     }
@@ -280,14 +282,10 @@ export function ChatDemo() {
         setStepIndex((i) => i + 1);
       }, 800);
     } else if (step.type === "thinking") {
-      const modelIndex = resolveStepModelIndex(step.model);
       setIsThinking(true);
-      const messageId = `msg-${stepIndex}`;
       const fullText = step.content ?? "";
 
-      setMessages((prev) => [...prev, { id: messageId, role: "assistant", content: "", model: `m${modelIndex}` }]);
-
-      const stop = startThinkingReveal(messageId, fullText);
+      const stop = startThinkingReveal(fullText);
 
       timeout = setTimeout(() => {
         stop();
@@ -333,6 +331,10 @@ export function ChatDemo() {
       {/* Messages */}
       <div className="flex-1 overflow-hidden px-4 py-4">
         <div className="flex h-full flex-col justify-end space-y-4">
+          {isThinking ? (
+            <ThinkingCollapsible content={thinkingText} isStreaming />
+          ) : null}
+
           {messages.map((message, index) => (
             <MessageBubble
               key={message.id}
@@ -343,7 +345,6 @@ export function ChatDemo() {
                   : undefined
               }
               isTyping={isTyping && index === messages.length - 1 && message.role === "assistant"}
-              isThinking={isThinking && index === messages.length - 1 && message.role === "assistant"}
             />
           ))}
           {showSwitch && <ModelSwitchIndicator from={showSwitch.from} to={showSwitch.to} models={demoModels} />}
