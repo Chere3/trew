@@ -33,19 +33,35 @@ const sslConfig = needsSelfSignedConfig
   ? { rejectUnauthorized: false }
   : undefined;
 
-export const db = new Pool({
-  connectionString,
-  ssl: sslConfig,
-  // Connection pool optimization
-  max: 20, // Maximum number of clients in the pool (increased from default 10)
-  min: 2, // Minimum number of clients to keep in the pool (warm pool)
-  idleTimeoutMillis: 30000, // Close idle clients after 30 seconds
-  connectionTimeoutMillis: 10000, // Return an error after 10 seconds if connection could not be established
-  // Statement timeout (in milliseconds) - queries taking longer than this will be cancelled
-  statement_timeout: 30000, // 30 seconds
-  // Query timeout (in milliseconds) - alternative approach using application-level timeout
-  query_timeout: 30000, // 30 seconds
-});
+const poolMax = Number(
+  process.env.PG_POOL_MAX ?? (process.env.NODE_ENV === "production" ? 10 : 5)
+);
+const poolMin = Number(process.env.PG_POOL_MIN ?? 0);
+
+function createPool() {
+  return new Pool({
+    connectionString,
+    ssl: sslConfig,
+    // Connection pool optimization
+    // NOTE: In dev, Next/Turbopack can reload modules and create multiple pools.
+    // Keep these conservative to avoid exhausting managed Postgres connection limits.
+    max: Number.isFinite(poolMax) ? poolMax : 5,
+    min: Number.isFinite(poolMin) ? poolMin : 0,
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 10000,
+    statement_timeout: 30000,
+    query_timeout: 30000,
+  });
+}
+
+declare global {
+  var __trewPgPool: Pool | undefined;
+}
+
+export const db = globalThis.__trewPgPool ?? createPool();
+if (process.env.NODE_ENV !== "production") {
+  globalThis.__trewPgPool = db;
+}
 
 // Handle pool errors
 db.on("error", (err: Error) => {
