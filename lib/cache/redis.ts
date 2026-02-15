@@ -33,7 +33,7 @@ export function getRedisClient(): Redis | null {
     redisClient = new Redis(redisUrl, {
       // Connection options
       maxRetriesPerRequest: 3,
-      retryStrategy: (times) => {
+      retryStrategy: (times: number) => {
         const delay = Math.min(times * 50, 2000);
         return delay;
       },
@@ -55,7 +55,7 @@ export function getRedisClient(): Redis | null {
       isRedisAvailable = true;
     });
 
-    redisClient.on("error", (error) => {
+    redisClient.on("error", (error: Error) => {
       console.error("[Cache] Redis error:", error.message);
       isRedisAvailable = false;
 
@@ -82,13 +82,14 @@ export function getRedisClient(): Redis | null {
     });
 
     // Attempt to connect
-    redisClient.connect().catch((error) => {
-      console.warn("[Cache] Failed to connect to Redis:", error.message);
+    redisClient.connect().catch((error: unknown) => {
+      const msg = error instanceof Error ? error.message : String(error);
+      console.warn("[Cache] Failed to connect to Redis:", msg);
       isRedisAvailable = false;
     });
 
     return redisClient;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("[Cache] Failed to initialize Redis:", error);
     isRedisAvailable = false;
     return null;

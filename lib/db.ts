@@ -48,7 +48,7 @@ export const db = new Pool({
 });
 
 // Handle pool errors
-db.on("error", (err) => {
+db.on("error", (err: Error) => {
   console.error("Unexpected error on idle PostgreSQL client", err);
   // Don't exit process in production - log and continue
   if (process.env.NODE_ENV === "production") {
