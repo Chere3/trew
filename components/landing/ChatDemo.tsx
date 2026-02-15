@@ -80,7 +80,7 @@ function TypingIndicator() {
 }
 
 function ThinkingCollapsible({ content, isStreaming }: { content: string; isStreaming?: boolean }) {
-  if (!content) return null;
+  if (!isStreaming && !content) return null;
 
   return (
     <div className="mb-2 max-w-[85%] sm:max-w-[75%] ml-10">
@@ -235,9 +235,10 @@ export function ChatDemo() {
   };
 
   const startThinkingReveal = (fullText: string) => {
-    setThinkingText("");
+    const seeded = fullText.slice(0, 2);
+    setThinkingText(seeded);
 
-    let i = 0;
+    let i = 2;
     const interval = setInterval(() => {
       i += 2;
       const next = fullText.slice(0, i);
