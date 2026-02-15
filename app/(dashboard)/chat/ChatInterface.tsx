@@ -104,18 +104,26 @@ export function ChatInterface() {
               .filter(Boolean)
           );
 
+          const loadedUserContents = new Set(
+            msgs
+              .filter((m) => m.role === MESSAGE_ROLE_USER && typeof m.content === "string")
+              .map((m) => m.content.trim())
+              .filter(Boolean)
+          );
+
           return prev.filter((m) => {
             if (m.isStreaming && m.role === MESSAGE_ROLE_ASSISTANT) return true;
             if (loadedMessageIds.has(m.id)) return false;
-            // Assistant temp ids never match DB ids; de-dup by content once stream is persisted.
-            if (
-              m.role === MESSAGE_ROLE_ASSISTANT &&
-              !m.isStreaming &&
-              typeof m.content === "string" &&
-              loadedAssistantContents.has(m.content.trim())
-            ) {
-              return false;
+
+            // Temp ids never match DB ids; de-dup by content once the message is persisted.
+            if (m.role === MESSAGE_ROLE_ASSISTANT && !m.isStreaming && typeof m.content === "string") {
+              return !loadedAssistantContents.has(m.content.trim());
             }
+
+            if (m.role === MESSAGE_ROLE_USER && typeof m.content === "string") {
+              return !loadedUserContents.has(m.content.trim());
+            }
+
             return true;
           });
         });
@@ -142,17 +150,25 @@ export function ChatInterface() {
                 .filter(Boolean)
             );
 
+            const loadedUserContents = new Set(
+              nextLoaded
+                .filter((m: any) => m.role === MESSAGE_ROLE_USER && typeof m.content === "string")
+                .map((m: any) => m.content.trim())
+                .filter(Boolean)
+            );
+
             return tempPrev.filter((m) => {
               if (m.isStreaming && m.role === MESSAGE_ROLE_ASSISTANT) return true;
               if (loadedMessageIds.has(m.id)) return false;
-              if (
-                m.role === MESSAGE_ROLE_ASSISTANT &&
-                !m.isStreaming &&
-                typeof m.content === "string" &&
-                loadedAssistantContents.has(m.content.trim())
-              ) {
-                return false;
+
+              if (m.role === MESSAGE_ROLE_ASSISTANT && !m.isStreaming && typeof m.content === "string") {
+                return !loadedAssistantContents.has(m.content.trim());
               }
+
+              if (m.role === MESSAGE_ROLE_USER && typeof m.content === "string") {
+                return !loadedUserContents.has(m.content.trim());
+              }
+
               return true;
             });
           });
