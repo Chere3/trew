@@ -3,6 +3,7 @@
 import { useState, type ReactNode } from 'react'
 import { Menu, X } from 'lucide-react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
@@ -44,8 +45,24 @@ export function Navbar({
         <div className="flex h-14 items-center justify-between">
           <div className="flex items-center">
             {logo || (
-              <Link href="/" className="text-base font-semibold tracking-tight text-foreground">
-                Trew
+              <Link href="/" className="flex items-center gap-2">
+                <Image
+                  src="/brand/trew-mark-black.png"
+                  alt="Trew"
+                  width={44}
+                  height={44}
+                  priority
+                  className="block dark:hidden"
+                />
+                <Image
+                  src="/brand/trew-mark-white.png"
+                  alt="Trew"
+                  width={44}
+                  height={44}
+                  priority
+                  className="hidden dark:block"
+                />
+                <span className="text-base font-semibold tracking-tight text-foreground">Trew</span>
               </Link>
             )}
           </div>
