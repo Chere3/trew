@@ -1,4 +1,3 @@
-import { Navbar } from "@/components/navigation/Navbar";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
@@ -16,10 +15,7 @@ export default async function DashboardLayout({
     redirect("/register");
   }
 
-  return (
-    <>
-      <Navbar isLoggedIn />
-      {children}
-    </>
-  );
+  // NOTE: Do not render the marketing Navbar in the dashboard area.
+  // The chat UI provides its own navigation/chrome.
+  return children;
 }
