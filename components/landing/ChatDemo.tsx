@@ -285,12 +285,16 @@ export function ChatDemo() {
   useEffect(() => {
     if (!isInView) {
       clearTimers();
+      setIsTyping(false);
+      setIsThinking(false);
       return;
     }
 
     clearTimers();
 
     const step = DEMO_SCRIPT[stepIndex];
+    const messageId = `msg-${stepIndex}`;
+
     if (!step) {
       animTimeoutRef.current = setTimeout(() => {
         setMessages([]);
@@ -315,7 +319,10 @@ export function ChatDemo() {
       }, 1200);
     } else if (step.type === "user") {
       animTimeoutRef.current = setTimeout(() => {
-        setMessages((prev) => [...prev, { id: `msg-${stepIndex}`, role: "user", content: step.content! }]);
+        setMessages((prev) => {
+          if (prev.some((m) => m.id === messageId)) return prev;
+          return [...prev, { id: messageId, role: "user", content: step.content! }];
+        });
         setStepIndex((i) => i + 1);
       }, 800);
     } else if (step.type === "thinking") {
@@ -332,11 +339,15 @@ export function ChatDemo() {
     } else if (step.type === "assistant") {
       const modelIndex = resolveStepModelIndex(step.model);
       setIsTyping(true);
-      setMessages((prev) => [...prev, { id: `msg-${stepIndex}`, role: "assistant", content: "", model: `m${modelIndex}` }]);
+
+      setMessages((prev) => {
+        if (prev.some((m) => m.id === messageId)) return prev;
+        return [...prev, { id: messageId, role: "assistant", content: "", model: `m${modelIndex}` }];
+      });
 
       animTimeoutRef.current = setTimeout(() => {
         setIsTyping(false);
-        setMessages((prev) => prev.map((m) => (m.id === `msg-${stepIndex}` ? { ...m, content: step.content! } : m)));
+        setMessages((prev) => prev.map((m) => (m.id === messageId ? { ...m, content: step.content! } : m)));
         setStepIndex((i) => i + 1);
       }, 1500);
     }
