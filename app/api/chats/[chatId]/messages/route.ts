@@ -123,8 +123,9 @@ export async function DELETE(
       [messageId, chatId]
     )
 
-    const createdAt = msgResult.rows[0]?.createdAt as number | undefined
-    if (typeof createdAt !== "number") {
+    const createdAtRaw = msgResult.rows[0]?.createdAt as unknown
+    const createdAt = typeof createdAtRaw === "string" ? Number(createdAtRaw) : (createdAtRaw as number | undefined)
+    if (typeof createdAt !== "number" || Number.isNaN(createdAt)) {
       return NextResponse.json(
         { error: ERROR_MESSAGES.NOT_FOUND.MESSAGE },
         { status: HTTP_STATUS.NOT_FOUND }

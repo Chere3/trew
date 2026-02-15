@@ -63,7 +63,7 @@ export async function GET(req: Request) {
                     return NextResponse.json({ error: ERROR_MESSAGES.FORBIDDEN }, { status: HTTP_STATUS.FORBIDDEN });
                 }
 
-                const stats = getUserStats(targetUserId, startDate, endDate);
+                const stats = await getUserStats(targetUserId, startDate, endDate);
                 if (!stats) {
                     return NextResponse.json({ error: ERROR_MESSAGES.NOT_FOUND.USER }, { status: HTTP_STATUS.NOT_FOUND });
                 }
@@ -121,7 +121,7 @@ export async function GET(req: Request) {
                     );
                 }
 
-                const stats = getModelStats(id, startDate, endDate);
+                const stats = await getModelStats(id, startDate, endDate);
                 if (!stats) {
                     return NextResponse.json({ error: ERROR_MESSAGES.NOT_FOUND.MODEL }, { status: HTTP_STATUS.NOT_FOUND });
                 }

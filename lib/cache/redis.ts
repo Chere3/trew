@@ -8,8 +8,10 @@ let redisDisabledUntil = 0;
  * Initialize Redis client with connection pooling and retry logic
  */
 export function getRedisClient(): Redis | null {
-  // Return existing client if available
-  if (redisClient && isRedisAvailable) {
+  // Reuse existing client (even while connecting/reconnecting) to avoid connection storms.
+  if (redisClient) {
+    // If Redis is currently on cooldown (e.g., DNS failure), fail-open.
+    if (Date.now() < redisDisabledUntil) return null;
     return redisClient;
   }
 

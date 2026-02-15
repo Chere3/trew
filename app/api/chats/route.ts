@@ -51,7 +51,18 @@ export async function GET(req: Request) {
 
     const chatsWithCleanPreview = rows.map((chat) => {
       const preview = typeof chat.preview === "string" ? chat.preview : null
-      if (!preview) return chat
+      const createdAt = typeof chat.createdAt === "string" ? Number(chat.createdAt) : chat.createdAt
+      const updatedAt = typeof chat.updatedAt === "string" ? Number(chat.updatedAt) : chat.updatedAt
+      const archivedAt = typeof chat.archivedAt === "string" ? Number(chat.archivedAt) : chat.archivedAt
+
+      const normalizedChat = {
+        ...chat,
+        createdAt: Number.isFinite(createdAt) ? createdAt : chat.createdAt,
+        updatedAt: Number.isFinite(updatedAt) ? updatedAt : chat.updatedAt,
+        archivedAt: Number.isFinite(archivedAt) ? archivedAt : chat.archivedAt,
+      }
+
+      if (!preview) return normalizedChat
 
       let cleanPreview = preview
       const thinkStart = cleanPreview.indexOf("<think>")
@@ -65,7 +76,7 @@ export async function GET(req: Request) {
         }
       }
 
-      return { ...chat, preview: cleanPreview }
+      return { ...normalizedChat, preview: cleanPreview }
     })
 
     return NextResponse.json(chatsWithCleanPreview)
@@ -142,15 +153,17 @@ export async function POST(req: Request) {
     console.error("Failed to generate title:", error)
   }
 
-  try {
-    await db.query("BEGIN")
+  const client = await db.connect()
 
-    await db.query(
+  try {
+    await client.query("BEGIN")
+
+    await client.query(
       `INSERT INTO chat (id, "userId", title, "createdAt", "updatedAt") VALUES ($1, $2, $3, $4, $5)`,
       [chatId, userId, finalTitle, now, now]
     )
 
-    await db.query(
+    await client.query(
       `INSERT INTO message (id, "chatId", role, content, attachments, "createdAt") VALUES ($1, $2, $3, $4, $5, $6)`,
       [
         nanoid(),
@@ -162,15 +175,17 @@ export async function POST(req: Request) {
       ]
     )
 
-    await db.query("COMMIT")
+    await client.query("COMMIT")
 
     return NextResponse.json({ id: chatId, title: finalTitle })
   } catch (error) {
-    await db.query("ROLLBACK").catch(() => {})
+    await client.query("ROLLBACK").catch(() => {})
     console.error("Error creating chat:", error)
     return NextResponse.json(
       { error: ERROR_MESSAGES.INTERNAL_SERVER_ERROR },
       { status: HTTP_STATUS.INTERNAL_SERVER_ERROR }
     )
+  } finally {
+    client.release()
   }
 }
