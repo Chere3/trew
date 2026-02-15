@@ -113,7 +113,7 @@ export function MessageBubble({
     <div
       id={id}
       className={cn(
-        'group flex gap-3 sm:gap-4 px-4 sm:px-6 py-3 hover:bg-muted/20 transition-colors message-enter',
+        'group flex gap-3 sm:gap-4 px-3 sm:px-6 py-3 hover:bg-muted/20 transition-colors message-enter',
         isUser ? 'flex-row-reverse' : 'flex-row',
         className
       )}
