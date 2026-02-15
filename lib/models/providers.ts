@@ -40,7 +40,7 @@ export const PROVIDER_CONFIG: Record<string, ProviderConfig> = {
   },
   anthropic: {
     icon: Bot,
-    color: "text-blue-600 dark:text-blue-400",
+    color: "text-violet-600 dark:text-violet-400",
     displayName: "Anthropic",
     logoUrl: "https://cdn.simpleicons.org/anthropic",
   },
@@ -52,7 +52,7 @@ export const PROVIDER_CONFIG: Record<string, ProviderConfig> = {
   },
   meta: {
     icon: Code,
-    color: "text-blue-500 dark:text-blue-300",
+    color: "text-rose-600 dark:text-rose-400",
     displayName: "Meta",
     logoUrl: "https://cdn.simpleicons.org/meta",
   },

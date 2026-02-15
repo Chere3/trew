@@ -181,20 +181,20 @@ export function MessageBubble({
           )}
         >
           {showMemoryNotification && memorySaved && (
-            <div className="mb-3 -mt-1 -mx-1 rounded-lg bg-blue-500/10 border border-blue-500/20 p-2 flex items-start gap-2 animate-in fade-in slide-in-from-top-2">
-              <Brain className="h-4 w-4 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+            <div className="mb-3 -mt-1 -mx-1 rounded-lg bg-violet-500/10 border border-violet-500/20 p-2 flex items-start gap-2 animate-in fade-in slide-in-from-top-2">
+              <Brain className="h-4 w-4 text-violet-600 dark:text-violet-400 shrink-0 mt-0.5" />
               <div className="flex-1 min-w-0">
-                <div className="text-xs font-medium text-blue-900 dark:text-blue-100 mb-1">
+                <div className="text-xs font-medium text-violet-900 dark:text-violet-100 mb-1">
                   Memory saved
                 </div>
-                <div className="text-xs text-blue-700 dark:text-blue-300 space-y-0.5">
+                <div className="text-xs text-violet-700 dark:text-violet-300 space-y-0.5">
                   {Object.keys(memorySaved.facts).slice(0, 3).map((key) => (
                     <div key={key} className="truncate">
                       • {key}
                     </div>
                   ))}
                   {Object.keys(memorySaved.facts).length > 3 && (
-                    <div className="text-blue-600 dark:text-blue-400">
+                    <div className="text-violet-600 dark:text-violet-400">
                       +{Object.keys(memorySaved.facts).length - 3} more
                     </div>
                   )}
@@ -202,7 +202,7 @@ export function MessageBubble({
               </div>
               <button
                 onClick={() => setShowMemoryNotification(false)}
-                className="shrink-0 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200 transition-colors"
+                className="shrink-0 text-violet-600 dark:text-violet-400 hover:text-violet-800 dark:hover:text-violet-200 transition-colors"
                 aria-label="Dismiss"
               >
                 <X className="h-3 w-3" />

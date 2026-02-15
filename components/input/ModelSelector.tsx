@@ -55,7 +55,7 @@ export const AVAILABLE_MODELS: Model[] = [
     name: "Claude 3.5 Sonnet",
     provider: "Anthropic",
     icon: "Bot",
-    color: "text-blue-600 dark:text-blue-400",
+    color: "text-violet-600 dark:text-violet-400",
     description: "Balanced performance",
     flagship: true,
     capabilities: {

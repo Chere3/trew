@@ -146,7 +146,7 @@ export function MemoryManager({ className }: MemoryManagerProps) {
     const getScoreColor = (score?: number) => {
         if (!score) return 'text-muted-foreground'
         if (score >= 0.8) return 'text-emerald-600 dark:text-emerald-400'
-        if (score >= 0.7) return 'text-blue-600 dark:text-blue-400'
+        if (score >= 0.7) return 'text-violet-600 dark:text-violet-400'
         return 'text-amber-600 dark:text-amber-400'
     }
 

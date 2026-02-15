@@ -16,9 +16,9 @@ interface VariantConfig {
 const variantConfig: Record<SystemMessageVariant, VariantConfig> = {
   [SYSTEM_MESSAGE_VARIANT_INFO]: {
     icon: Info,
-    containerClass: 'border-blue-500/10 bg-blue-500/5',
-    iconClass: 'text-blue-600 dark:text-blue-400',
-    ringClass: 'ring-blue-500/10',
+    containerClass: 'border-violet-500/10 bg-violet-500/5',
+    iconClass: 'text-violet-600 dark:text-violet-400',
+    ringClass: 'ring-violet-500/10',
   },
   [SYSTEM_MESSAGE_VARIANT_SUCCESS]: {
     icon: CheckCircle2,
