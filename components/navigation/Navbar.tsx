@@ -47,10 +47,10 @@ export function Navbar({
             {logo || (
               <Link href="/" className="flex items-center gap-2">
                 <Image
-                  src="/brand/trew-logo.png"
+                  src="/brand/trew-mark.png"
                   alt="Trew"
-                  width={28}
-                  height={28}
+                  width={40}
+                  height={40}
                   priority
                 />
                 <span className="text-base font-semibold tracking-tight text-foreground">Trew</span>
