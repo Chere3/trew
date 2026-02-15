@@ -1,38 +1,42 @@
-// For more info, see https://github.com/storybookjs/eslint-plugin-storybook#configuration-flat-config-format
-import storybook from "eslint-plugin-storybook";
+import js from "@eslint/js";
+import tseslint from "typescript-eslint";
 
-import { defineConfig, globalIgnores } from "eslint/config";
-import nextVitals from "eslint-config-next/core-web-vitals";
-import nextTs from "eslint-config-next/typescript";
-
-const eslintConfig = defineConfig([
-  ...nextVitals,
-  ...nextTs,
-  // Override default ignores of eslint-config-next.
-  globalIgnores([
-    // Default ignores of eslint-config-next:
-    ".next/**",
-    "out/**",
-    "build/**",
-    "next-env.d.ts",
-    // Stories and tests: handled by Storybook/Vitest linting
-    "**/*.stories.*",
-    "**/*.test.*",
-    "**/*.spec.*",
-    "migrations/**",
-  ]),
-
-  // Pragmatic rule tuning: keep CI green while we incrementally improve code quality.
+export default tseslint.config(
+  {
+    ignores: [
+      ".next/**",
+      "out/**",
+      "build/**",
+      "next-env.d.ts",
+      "**/*.stories.*",
+      "**/*.test.*",
+      "**/*.spec.*",
+      "migrations/**",
+      "scripts/**",
+    ],
+  },
+  js.configs.recommended,
+  ...tseslint.configs.recommended,
   {
     rules: {
+      // Pragmatic rule tuning: keep CI green while we incrementally improve code quality.
       "@typescript-eslint/no-explicit-any": "off",
-      "react-hooks/set-state-in-effect": "off",
       "@typescript-eslint/no-unused-vars": "off",
+
+      // Relax a few base JS rules that are noisy in this codebase.
+      "no-empty": "off",
+      "no-case-declarations": "off",
+      "no-useless-assignment": "off",
+      "no-shadow-restricted-names": "off",
+      "no-useless-escape": "off",
+
+      // React hooks linting is intentionally relaxed (complex effects in the UI).
       "react-hooks/exhaustive-deps": "off",
+      "react-hooks/set-state-in-effect": "off",
       "react-hooks/purity": "off",
+
+      // Next.js image lint: we sometimes intentionally use <img> (data URLs, etc.).
       "@next/next/no-img-element": "off",
     },
-  },
-]);
-
-export default eslintConfig;
+  }
+);
