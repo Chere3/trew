@@ -266,7 +266,7 @@ export function MessageBubble({
         {!isSystem && (
           <div
             className={cn(
-              'flex items-center gap-1 mt-1 opacity-0 group-hover:opacity-100 transition-opacity',
+              'flex items-center gap-1 mt-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity',
               isUser ? 'flex-row-reverse' : 'flex-row'
             )}
           >
