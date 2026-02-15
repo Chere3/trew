@@ -1,10 +1,10 @@
-"use client";
-
-import { ShieldCheck, Star } from "lucide-react";
+import { ShieldCheck, Star, Sparkles, Timer, Layers3, TrendingUp } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+
+type Accent = "rose" | "violet" | "emerald" | "amber";
 
 type Testimonial = {
   quote: string;
@@ -15,7 +15,7 @@ type Testimonial = {
   rating: number;
   avatarImage: string;
   highlight?: string;
-  accent?: "emerald" | "violet" | "amber" | "rose";
+  accent?: Accent;
 };
 
 const testimonials: Testimonial[] = [
@@ -117,12 +117,32 @@ function Stars({ rating, className }: { rating: number; className?: string }) {
   );
 }
 
-const accentRail: Record<NonNullable<Testimonial["accent"]>, string> = {
-  emerald: "bg-emerald-500",
-  violet: "bg-violet-500",
-  amber: "bg-amber-500",
+const accentRail: Record<Accent, string> = {
   rose: "bg-rose-500",
+  violet: "bg-violet-500",
+  emerald: "bg-emerald-500",
+  amber: "bg-amber-500",
 };
+
+function StatChip({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="rounded-xl border border-border bg-background px-3 py-2">
+      <div className="flex items-center gap-2">
+        <Icon className="h-4 w-4 text-primary" />
+        <p className="text-xs text-muted-foreground">{label}</p>
+      </div>
+      <p className="mt-1 text-sm font-semibold text-foreground">{value}</p>
+    </div>
+  );
+}
 
 function ReviewCard({ testimonial, featured = false }: { testimonial: Testimonial; featured?: boolean }) {
   const rail = testimonial.accent ? accentRail[testimonial.accent] : "bg-primary";
@@ -189,16 +209,19 @@ export function Testimonials() {
     <section id="reviews" className="px-4 py-16 sm:px-6 sm:py-20 lg:px-10">
       <div className="mx-auto max-w-7xl space-y-12">
         <div className="grid gap-6 lg:grid-cols-[1fr_420px] lg:items-end">
-          <div className="space-y-3">
-            <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">Reviews</p>
+          <header className="space-y-3">
+            <div className="inline-flex items-center gap-2 text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+              <Sparkles className="h-4 w-4 text-primary" />
+              Reviews
+            </div>
             <h2 className="text-3xl font-semibold leading-tight tracking-[-0.025em] sm:text-4xl">
               Proof from teams shipping across models.
             </h2>
             <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
-              Designed for daily production work: switch providers mid-thread, keep context intact, and keep the workflow
+              Built for daily production work: switch providers mid-thread, keep context intact, and keep the workflow
               clean.
             </p>
-          </div>
+          </header>
 
           <aside className="rounded-xl border border-border bg-card p-6 shadow-sm">
             <div className="flex items-start justify-between gap-6">
@@ -231,7 +254,14 @@ export function Testimonials() {
         </div>
 
         <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-          <ReviewCard testimonial={featured} featured />
+          <div className="space-y-4">
+            <ReviewCard testimonial={featured} featured />
+            <div className="grid gap-3 sm:grid-cols-3">
+              <StatChip icon={TrendingUp} label="Reported lift" value="+40%" />
+              <StatChip icon={Timer} label="Median time-to-value" value="~7 min" />
+              <StatChip icon={Layers3} label="Tabs replaced" value="3–5" />
+            </div>
+          </div>
 
           <div className="grid gap-4 sm:grid-cols-2 lg:pt-1">
             {rest.map((t) => (
