@@ -1,27 +1,39 @@
-import { redirect } from "next/navigation";
+import type { Metadata } from "next";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
-import type { Metadata } from "next";
-import { ChatInterface } from "@/app/(dashboard)/chat/ChatInterface";
+import { db } from "@/lib/db";
 
-export const metadata: Metadata = {
-  title: "Chat - Trew",
-  description: "Chat with AI models",
-};
-
-export default async function ChatConversationPage({
+export async function generateMetadata({
   params,
 }: {
   params: Promise<{ conversationId: string }>;
-}) {
+}): Promise<Metadata> {
   const { conversationId } = await params;
+
   const session = await auth.api.getSession({
     headers: await headers(),
   });
 
-  if (!session) {
-    redirect("/register");
+  if (!session?.user) {
+    return { title: "Chat - Trew" };
   }
 
-  return <ChatInterface />;
+  try {
+    const res = await db.query(
+      `SELECT title FROM chat WHERE id = $1 AND "userId" = $2 AND "deletedAt" IS NULL LIMIT 1`,
+      [conversationId, session.user.id]
+    );
+
+    const title = res.rows?.[0]?.title as string | undefined;
+    if (title) return { title: `${title} - Trew` };
+  } catch {
+    // ignore
+  }
+
+  return { title: "Chat - Trew" };
+}
+
+// The main UI is rendered by the layout to preserve state across navigations.
+export default function ChatConversationPage() {
+  return null;
 }

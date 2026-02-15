@@ -425,29 +425,38 @@ export function ChatDemo() {
   }, [availableModels]);
 
   return (
-    <div ref={containerRef} className="h-full w-full flex flex-col overflow-hidden box-border bg-background">
-      {/* Model Selector */}
-      <ModelSelector
-        selectedModelId={selectedModel}
-        onModelChange={() => {}} // Prevent model changes in demo (animation controls it)
-      />
-
-      {/* Messages */}
-      <div className="flex-1 min-h-0 overflow-hidden">
-        <MessageList 
-          className="h-full"
-          messages={messages}
-          availableModels={availableModels}
-          getProviderIcon={getProviderIcon}
-        />
+    <div ref={containerRef} className="h-full w-full flex flex-col relative overflow-hidden bg-background">
+      {/* Header */}
+      <div className="flex items-center justify-between gap-4 px-4 py-3 border-b border-border/30 bg-background/50 backdrop-blur-sm z-10">
+        <div className="flex items-center gap-2">
+           <ModelSelector
+              selectedModelId={selectedModel}
+              onModelChange={() => {}}
+            />
+        </div>
       </div>
 
-      {/* Message Composer */}
-      <MessageComposer
-        onSend={() => {}}
-        placeholder="Message Trew..."
-        disabled={true}
-      />
+      {/* Messages */}
+      <div className="flex-1 overflow-y-auto min-h-0 scrollbar-hide pb-24">
+         <div className="max-w-3xl mx-auto w-full h-full flex flex-col pt-4">
+            <MessageList 
+              className="pb-4"
+              messages={messages}
+              availableModels={availableModels}
+              getProviderIcon={getProviderIcon}
+            />
+         </div>
+      </div>
+
+      {/* Message Composer - Absolute Bottom */}
+      <div className="absolute bottom-0 left-0 right-0 z-20">
+         <MessageComposer
+            onSend={() => {}}
+            placeholder="Message Trew..."
+            disabled={true}
+            className="bg-transparent border-t-0"
+         />
+      </div>
     </div>
   );
 }

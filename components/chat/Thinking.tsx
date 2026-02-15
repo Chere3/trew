@@ -28,15 +28,16 @@ export function Thinking({ content, isStreaming = false }: ThinkingProps) {
     if (!content) return null
 
     return (
-        <div className="mb-2 max-w-[85%] sm:max-w-[75%] ml-12">
+        <div className="mb-2 max-w-[85%] sm:max-w-[75%] ml-10">
             <button
                 onClick={() => setIsExpanded(!isExpanded)}
-                className="flex items-center gap-2 text-xs font-medium text-muted-foreground/70 hover:text-foreground transition-colors mb-2 select-none"
+                className="flex items-center gap-2 text-xs font-medium text-muted-foreground/75 hover:text-foreground transition-colors mb-2 select-none"
             >
-                <div className={cn("p-1 rounded-md bg-muted/50", isStreaming && "animate-pulse")}>
-                    <BrainCircuit className="w-3.5 h-3.5" />
+                <div className={cn("-ml-0.5 p-1 rounded-md bg-muted/50", isStreaming && "animate-pulse")}>
+                    <BrainCircuit className={cn("w-3.5 h-3.5", isStreaming && "animate-[spin_2.4s_linear_infinite]")} />
                 </div>
-                <span>Thought Process</span>
+                <span>{isStreaming ? "Thinking..." : "Thought Process"}</span>
+                {isStreaming && <span className="text-[10px] animate-pulse opacity-70">●</span>}
                 {isExpanded ? (
                     <ChevronDown className="w-3.5 h-3.5 opacity-50" />
                 ) : (

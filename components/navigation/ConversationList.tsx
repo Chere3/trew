@@ -25,126 +25,76 @@ export function ConversationList({
   className,
 }: ConversationListProps) {
   return (
-    <div className={cn('flex flex-col h-full', className)}>
+    <div className={cn('flex h-full flex-col', className)}>
       {onNew && (
-        <div className="p-4">
-          <Button
-            onClick={onNew}
-            className="w-full shadow-sm hover:shadow-md transition-shadow"
-            size="sm"
-          >
+        <div className="p-3">
+          <Button onClick={onNew} className="w-full" size="sm">
             <Plus className="mr-2 h-4 w-4" />
-            New Conversation
+            New conversation
           </Button>
         </div>
       )}
       <ScrollArea className="flex-1">
-        <div className="p-2 overflow-visible">
+        <div className="p-2">
           {conversations.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-8 px-4 text-center">
-              <MessageSquare className="h-8 w-8 text-muted-foreground/50 mb-2" />
+            <div className="flex flex-col items-center justify-center px-4 py-8 text-center">
+              <MessageSquare className="mb-2 h-8 w-8 text-muted-foreground/50" />
               <p className="text-sm text-muted-foreground">No conversations yet</p>
-              <p className="text-xs text-muted-foreground/70 mt-1">
-                Start a new conversation to get started
-              </p>
             </div>
           ) : (
-            <div className="space-y-1 overflow-visible">
+            <div className="space-y-1">
               {conversations.map((conversation) => {
-                const isSelected = selectedId === conversation.id;
+                const isSelected = selectedId === conversation.id
                 return (
-                  <div
-                    key={conversation.id}
-                    className="relative group overflow-visible"
-                  >
+                  <div key={conversation.id} className="relative group">
                     <button
                       onClick={() => onSelect?.(conversation)}
                       className={cn(
-                        'w-full text-left p-3 rounded-lg transition-all duration-200',
-                        'hover:bg-muted/50 hover:shadow-sm cursor-pointer',
-                        'overflow-visible relative',
-                        isSelected && 'bg-muted/80 shadow-sm font-medium'
+                        'w-full rounded-md border px-3 py-2.5 text-left transition-colors',
+                        isSelected
+                          ? 'border-border bg-accent/70'
+                          : 'border-transparent hover:border-border hover:bg-accent/40'
                       )}
                     >
-                      <div className="flex items-start gap-2 pr-12">
-                        <div className={cn(
-                          'flex items-center justify-center w-8 h-8 rounded-lg flex-shrink-0 mt-0.5 transition-colors',
-                          isSelected
-                            ? 'bg-primary/10 text-primary'
-                            : 'bg-muted/50 text-muted-foreground'
-                        )}>
+                      <div className="flex items-start gap-2 pr-9">
+                        <div
+                          className={cn(
+                            'mt-0.5 flex h-7 w-7 items-center justify-center rounded-md flex-shrink-0',
+                            isSelected ? 'bg-primary/15 text-primary' : 'bg-muted text-muted-foreground'
+                          )}
+                        >
                           <MessageSquare className="h-4 w-4" />
                         </div>
-                        <div className="flex-1 min-w-0" style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
-                          <div className="flex items-start gap-2 mb-1 min-w-0">
-                            <span className={cn(
-                              'text-sm flex-1 min-w-0',
-                              isSelected ? 'text-foreground font-semibold' : 'text-foreground'
-                            )}
-                            style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
-                              {conversation.title}
-                            </span>
-                            {conversation.unread && conversation.unread > 0 && (
-                              <span className="flex-shrink-0 text-xs bg-primary text-primary-foreground rounded-full px-2 py-0.5 font-medium min-w-[1.25rem] text-center mt-0.5">
-                                {conversation.unread}
-                              </span>
-                            )}
-                          </div>
+                        <div className="min-w-0 flex-1" style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
+                          <span className={cn('text-sm', isSelected ? 'font-medium text-foreground' : 'text-foreground')}>
+                            {conversation.title}
+                          </span>
                           {conversation.preview && (
-                            <p className="text-xs text-muted-foreground line-clamp-2 mb-1"
-                            style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
-                              {conversation.preview}
-                            </p>
-                          )}
-                          {conversation.timestamp && (
-                            <p className="text-xs text-muted-foreground/70 truncate">
-                              {conversation.timestamp.toLocaleDateString('en-US', {
-                                month: 'short',
-                                day: 'numeric',
-                                ...(conversation.timestamp.getTime() < Date.now() - 86400000 && {
-                                  year: 'numeric'
-                                })
-                              })}
-                            </p>
+                            <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{conversation.preview}</p>
                           )}
                         </div>
                       </div>
                     </button>
 
-                    {/* Action Menu */}
-                    <div className={cn(
-                      "absolute right-1 top-2 opacity-0 group-hover:opacity-100 transition-opacity z-30 pointer-events-auto",
-                      isSelected && "opacity-100"
-                    )}
-                    style={{ pointerEvents: 'auto' }}>
+                    <div className={cn('absolute right-1 top-1.5 opacity-0 transition-opacity group-hover:opacity-100', isSelected && 'opacity-100')}>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="h-7 w-7 flex-shrink-0 pointer-events-auto"
-                            onClick={(e) => e.stopPropagation()}
-                          >
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => e.stopPropagation()}>
                             <MoreHorizontal className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="z-50">
                           <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onArchive?.(conversation.id); }}>
-                            <Archive className="mr-2 h-4 w-4" />
-                            Archive
+                            <Archive className="mr-2 h-4 w-4" />Archive
                           </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={(e) => { e.stopPropagation(); onDelete?.(conversation.id); }}
-                            className="text-destructive focus:text-destructive"
-                          >
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Delete
+                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onDelete?.(conversation.id); }} className="text-destructive focus:text-destructive">
+                            <Trash2 className="mr-2 h-4 w-4" />Delete
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
                   </div>
-                );
+                )
               })}
             </div>
           )}

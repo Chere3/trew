@@ -25,7 +25,11 @@ export function Sidebar({
   const [internalCollapsed, setInternalCollapsed] = useState(defaultCollapsed)
   const [width, setWidth] = useState(280) // Default width
   const [isResizing, setIsResizing] = useState(false)
-  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false)
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(() => {
+    // initialize without effect to avoid setState-in-effect lint
+    if (typeof window === 'undefined') return false
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  })
   const sidebarRef = useRef<HTMLElement>(null)
 
   // Use controlled or uncontrolled state
@@ -38,10 +42,9 @@ export function Sidebar({
     onCollapsedChange?.(newCollapsed)
   }
 
-  // Detect reduced motion preference
+  // Detect reduced motion preference (subscribe only)
   useEffect(() => {
     const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
-    setPrefersReducedMotion(mediaQuery.matches)
 
     const handleChange = (e: MediaQueryListEvent) => {
       setPrefersReducedMotion(e.matches)
@@ -106,9 +109,9 @@ export function Sidebar({
       aria-label="Navigation sidebar"
       className={cn(
         // Distinct background color (secondary/muted)
-        'bg-secondary/30 backdrop-blur-sm',
+        'bg-card',
         'flex flex-col h-full relative group',
-        'border-r border-border/50',
+        'border-r border-border',
         // Smooth transitions with reduced motion support
         prefersReducedMotion || isResizing
           ? 'transition-none'
@@ -152,7 +155,7 @@ export function SidebarHeader({
   className?: string
 }) {
   return (
-    <div className={cn('flex items-center px-4 py-3 border-b border-border/30', className)}>
+    <div className={cn('flex items-center px-4 py-3 border-b border-border', className)}>
       {children}
     </div>
   )
@@ -180,7 +183,7 @@ export function SidebarFooter({
   className?: string
 }) {
   return (
-    <div className={cn('p-4 border-t border-border/30', className)}>
+    <div className={cn('p-4 border-t border-border', className)}>
       {children}
     </div>
   )

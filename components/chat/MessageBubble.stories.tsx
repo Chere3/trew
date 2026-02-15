@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react'
 import { MessageBubble } from './MessageBubble'
+import { MessageBubbleSkeleton } from './MessageBubbleSkeleton'
 import { expect, userEvent, within } from '@storybook/test'
 
 const meta = {
@@ -73,4 +74,20 @@ export const WithActions: Story = {
     // Hover to show actions
     await userEvent.hover(message.closest('div') as HTMLElement)
   },
+}
+
+export const SkeletonUser: Story = {
+  args: {
+    role: 'user',
+    content: 'Hello! How can I help you today?',
+  },
+  render: (args) => <MessageBubbleSkeleton {...args} />,
+}
+
+export const SkeletonAssistant: Story = {
+  args: {
+    role: 'assistant',
+    content: 'I can help you with a variety of tasks. What would you like to know?',
+  },
+  render: (args) => <MessageBubbleSkeleton {...args} />,
 }

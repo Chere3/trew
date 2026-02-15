@@ -1,15 +1,18 @@
 'use client'
 
+import type { ReactNode } from 'react'
 import { cn } from '@/lib/utils'
 
-export interface TableColumn<T = any> {
-  key: string
+type CellValue = ReactNode
+
+export interface TableColumn<T extends Record<string, unknown> = Record<string, unknown>> {
+  key: keyof T & string
   header: string
-  render?: (value: any, row: T) => React.ReactNode
+  render?: (value: unknown, row: T) => ReactNode
   align?: 'left' | 'center' | 'right'
 }
 
-export interface TableProps<T = any> {
+export interface TableProps<T extends Record<string, unknown> = Record<string, unknown>> {
   columns: TableColumn<T>[]
   data: T[]
   className?: string
@@ -17,7 +20,7 @@ export interface TableProps<T = any> {
   hoverable?: boolean
 }
 
-export function Table<T extends Record<string, any>>({
+export function Table<T extends Record<string, unknown>>({
   columns,
   data,
   className,
@@ -64,7 +67,7 @@ export function Table<T extends Record<string, any>>({
                 >
                   {column.render
                     ? column.render(row[column.key], row)
-                    : row[column.key]}
+                    : (row[column.key] as ReactNode)}
                 </td>
               ))}
             </tr>

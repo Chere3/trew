@@ -17,16 +17,25 @@ import { CATEGORY_PRIORITY, QUICK_MODEL_DEFAULT } from "./types";
  * Get the ranking index for a model based on category
  */
 function getCategoryScore(model: RankedModel, category: TaskCategory): number {
+    // Balanced composite scoring to avoid overfitting to a single index.
+    const iq = model.intelligenceIndex ?? 0;
+    const code = model.codingIndex ?? iq;
+    const math = model.mathIndex ?? iq;
+    const reason = model.reasoningIndex ?? math;
+
     switch (category) {
         case "coding":
-            return model.codingIndex ?? model.intelligenceIndex ?? 0;
+            // Strong coding preference, but keep reasoning/math/intelligence in play.
+            return (code * 0.55) + (reason * 0.20) + (math * 0.15) + (iq * 0.10);
         case "math_reasoning":
-            return model.mathIndex ?? model.reasoningIndex ?? model.intelligenceIndex ?? 0;
+            // Prioritize math + reasoning, still reward broad capability.
+            return (math * 0.45) + (reason * 0.30) + (iq * 0.15) + (code * 0.10);
         case "general":
-            return model.intelligenceIndex ?? 0;
+            // General should be broadly capable, not just one-dimensional.
+            return (iq * 0.55) + (reason * 0.20) + (code * 0.15) + (math * 0.10);
         case "quick":
-            // For quick tasks, prefer any decent model (will be overridden by default)
-            return model.intelligenceIndex ?? 0;
+            // Quick is mostly overridden later, but keep a balanced fallback.
+            return (iq * 0.50) + (reason * 0.20) + (code * 0.15) + (math * 0.15);
     }
 }
 
@@ -87,15 +96,7 @@ export function assignModelsToCategories(models: RankedModel[]): CategoryModelAs
         });
 
         // Assign the top model
-        let topModel = sorted[0];
-
-        // For "general" tasks, prefer a mid-level model (e.g., 3rd or 4th best)
-        // This reserves the top models for complex reasoning/coding and saves costs/latency
-        if (category === "general" && sorted.length >= 3) {
-            const midIndex = Math.min(2, sorted.length - 1); // Pick 3rd best (index 2)
-            topModel = sorted[midIndex];
-            console.log(`[Autorouter] Optimized General Selection: chosing ${topModel.name} (rank ${midIndex + 1}) instead of ${sorted[0].name}`);
-        }
+        const topModel = sorted[0];
 
         assignments[category] = topModel.id;
         usedModelIds.add(topModel.id);

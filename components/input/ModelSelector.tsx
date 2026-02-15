@@ -216,7 +216,7 @@ export function ModelSelector({
   }, [open]);
 
   return (
-    <div className={cn("border-b border-border/50 bg-background/80 backdrop-blur-sm", className)}>
+    <div className={cn("border-b border-border bg-background", className)}>
       <div className="px-4 py-2 flex justify-center">
         <Popover open={open} onOpenChange={setOpen}>
           <PopoverTrigger asChild>
@@ -224,8 +224,8 @@ export function ModelSelector({
               variant="ghost"
               className={cn(
                 "flex items-center gap-2 h-auto py-1.5 px-3",
-                "rounded-lg border border-border/50 bg-background",
-                "text-xs font-medium text-foreground shadow-sm",
+                "rounded-md border border-border bg-background",
+                "text-xs font-medium text-foreground",
                 "hover:bg-muted/50 hover:text-foreground",
                 "transition-all duration-200",
                 open && "bg-muted/50"
@@ -258,13 +258,7 @@ export function ModelSelector({
           </PopoverTrigger>
           <PopoverContent
             className={cn(
-              "w-[640px] p-0 overflow-hidden",
-              // Retro popover with heavier shadows and bezel
-              "bg-gradient-to-b from-card to-background",
-              "shadow-[0_0_0_1px_rgba(0,0,0,0.05),0_12px_36px_rgba(0,0,0,0.15),0_4px_12px_rgba(0,0,0,0.08)]",
-              "dark:shadow-[0_0_0_1px_rgba(255,255,255,0.05),0_12px_36px_rgba(0,0,0,0.3),0_4px_12px_rgba(0,0,0,0.15)]",
-              "border-none ring-1 ring-border/50",
-              "rounded-xl"
+              "w-[640px] overflow-hidden rounded-lg border border-border bg-card p-0 shadow-lg"
             )}
             align="center"
             sideOffset={8}

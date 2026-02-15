@@ -206,9 +206,9 @@ export function PricingCard({ tier, billingPeriod }: { tier: PricingTier; billin
     <Card
       className={cn(
         "relative flex flex-col h-full transition-all duration-300",
-        "border border-border/50 bg-card/80 backdrop-blur-sm",
-        "hover:border-primary/30 hover:shadow-xl hover:scale-[1.02]",
-        tier.popular && "border-2 border-primary/50 shadow-lg shadow-primary/10"
+        "border border-border bg-card",
+        "hover:border-border hover:shadow-md",
+        tier.popular && "border-primary/60 shadow-md"
       )}
     >
       {tier.popular && (
@@ -323,36 +323,8 @@ export function Pricing() {
   };
 
   return (
-    <div className="relative overflow-hidden min-h-screen">
-      {/* Background Grid Pattern */}
-      <div
-        className="absolute inset-0 -z-20 opacity-100"
-        style={{
-          backgroundImage: `
-            linear-gradient(to right, rgba(0, 0, 0, 0.03) 1px, transparent 1px),
-            linear-gradient(to bottom, rgba(0, 0, 0, 0.03) 1px, transparent 1px)
-          `,
-          backgroundSize: "24px 24px",
-        }}
-      />
-      <div
-        className="absolute inset-0 -z-20 opacity-0 dark:opacity-100"
-        style={{
-          backgroundImage: `
-            linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
-            linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px)
-          `,
-          backgroundSize: "24px 24px",
-        }}
-      />
-
-      {/* Background Accent */}
-      <div className="absolute inset-0 -z-10 overflow-hidden">
-        <div className="absolute left-1/2 top-0 h-[800px] w-[800px] -translate-x-1/2 rounded-full bg-primary/10 blur-3xl" />
-        <div className="absolute right-0 top-1/2 h-[600px] w-[600px] -translate-y-1/2 translate-x-1/2 rounded-full bg-primary/5 blur-3xl" />
-      </div>
-
-      <div className="relative z-10">
+    <div className="min-h-screen bg-background">
+      <div>
         {/* Hero Section */}
         <section className="pt-24 pb-12 sm:pt-32 sm:pb-16">
           <div className="mx-auto max-w-7xl px-6 lg:px-8">
@@ -414,7 +386,7 @@ export function Pricing() {
         {/* Trust Signals */}
         <section className="pb-16">
           <div className="mx-auto max-w-7xl px-6 lg:px-8">
-            <div className="rounded-2xl border border-border/50 bg-card/50 backdrop-blur-sm p-6 sm:p-8">
+            <div className="rounded-lg border border-border bg-card p-6 sm:p-8">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8 text-center">
                 <div className="flex flex-col items-center gap-2">
                   <Shield className="h-8 w-8 text-primary" />
@@ -451,7 +423,7 @@ export function Pricing() {
             {/* Desktop Table */}
             <div className="hidden lg:block overflow-x-auto">
               <div className="inline-block min-w-full align-middle">
-                <div className="overflow-hidden rounded-xl border border-border/50 bg-card/50 backdrop-blur-sm">
+                <div className="overflow-hidden rounded-lg border border-border bg-card">
                   <table className="min-w-full divide-y divide-border/50">
                     <thead className="bg-muted/30">
                       <tr>

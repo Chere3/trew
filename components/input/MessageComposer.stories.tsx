@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react'
 import { MessageComposer } from './MessageComposer'
+import { MessageComposerSkeleton } from './MessageComposerSkeleton'
 import { within, expect, userEvent } from '@storybook/test'
 
 const meta = {
@@ -50,4 +51,9 @@ export const Disabled: Story = {
     placeholder: 'Type your message...',
     disabled: true,
   },
+}
+
+export const Skeleton: Story = {
+  args: {},
+  render: (args) => <MessageComposerSkeleton {...args} />,
 }
