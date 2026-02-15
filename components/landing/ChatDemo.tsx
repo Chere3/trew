@@ -47,7 +47,12 @@ const DEMO_SCRIPT: DemoStep[] = [
   },
   { type: "user", content: "I'm getting a hydration error in Next.js. How do I debug it?" },
   { type: "switch", model: "m1" },
-  { type: "thinking", model: "m1" },
+  {
+    type: "thinking",
+    model: "m1",
+    content:
+      "Let’s narrow down the mismatch source.\n- Check if the component reads browser-only state on first render\n- Look for non-determinism (Date/Math.random)\n- Verify the DOM structure is valid\n- If needed, isolate the problematic subtree behind a Client Component",
+  },
   {
     type: "assistant",
     content:
@@ -74,17 +79,16 @@ function TypingIndicator() {
   );
 }
 
-function ThinkingIndicator() {
+function ThinkingIndicator({ text }: { text: string }) {
   return (
     <div className="space-y-2">
       <div className="flex items-center gap-2 text-xs text-muted-foreground">
         <span className="inline-flex h-1.5 w-1.5 animate-pulse rounded-full bg-muted-foreground/60" />
-        <span>Thinking</span>
+        <span>Reasoning (summary)</span>
       </div>
-      <div className="space-y-1.5">
-        <div className="h-2 w-56 rounded bg-muted-foreground/10" />
-        <div className="h-2 w-44 rounded bg-muted-foreground/10" />
-        <div className="h-2 w-32 rounded bg-muted-foreground/10" />
+      <div className="text-sm leading-relaxed text-muted-foreground">
+        <span className="whitespace-pre-wrap">{text}</span>
+        <span className="ml-0.5 inline-block h-4 w-1 animate-pulse align-middle bg-muted-foreground/40" />
       </div>
     </div>
   );
@@ -136,7 +140,7 @@ function MessageBubble({
           {isTyping ? (
             <TypingIndicator />
           ) : isThinking ? (
-            <ThinkingIndicator />
+            <ThinkingIndicator text={message.content} />
           ) : (
             <span className="whitespace-pre-wrap">{message.content}</span>
           )}
@@ -168,6 +172,7 @@ export function ChatDemo() {
   const [stepIndex, setStepIndex] = useState(0);
   const [isTyping, setIsTyping] = useState(false);
   const [isThinking, setIsThinking] = useState(false);
+  const [thinkingText, setThinkingText] = useState("");
   const [showSwitch, setShowSwitch] = useState<{ from: number; to: number } | null>(null);
   const [isInView, setIsInView] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -226,6 +231,22 @@ export function ChatDemo() {
     return 0;
   };
 
+  const startThinkingReveal = (messageId: string, fullText: string) => {
+    setThinkingText("");
+    setMessages((prev) => prev.map((m) => (m.id === messageId ? { ...m, content: "" } : m)));
+
+    let i = 0;
+    const interval = setInterval(() => {
+      i += 2;
+      const next = fullText.slice(0, i);
+      setThinkingText(next);
+      setMessages((prev) => prev.map((m) => (m.id === messageId ? { ...m, content: next } : m)));
+      if (i >= fullText.length) clearInterval(interval);
+    }, 24);
+
+    return () => clearInterval(interval);
+  };
+
   // Animation loop
   useEffect(() => {
     if (!isInView) return;
@@ -261,12 +282,18 @@ export function ChatDemo() {
     } else if (step.type === "thinking") {
       const modelIndex = resolveStepModelIndex(step.model);
       setIsThinking(true);
-      setMessages((prev) => [...prev, { id: `msg-${stepIndex}`, role: "assistant", content: "", model: `m${modelIndex}` }]);
+      const messageId = `msg-${stepIndex}`;
+      const fullText = step.content ?? "";
+
+      setMessages((prev) => [...prev, { id: messageId, role: "assistant", content: "", model: `m${modelIndex}` }]);
+
+      const stop = startThinkingReveal(messageId, fullText);
 
       timeout = setTimeout(() => {
+        stop();
         setIsThinking(false);
         setStepIndex((i) => i + 1);
-      }, 1400);
+      }, Math.min(2200, Math.max(1400, fullText.length * 14)));
     } else if (step.type === "assistant") {
       const modelIndex = resolveStepModelIndex(step.model);
       setIsTyping(true);
