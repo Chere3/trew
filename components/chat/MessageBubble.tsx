@@ -113,14 +113,14 @@ export function MessageBubble({
     <div
       id={id}
       className={cn(
-        'group flex gap-4 px-6 py-3 hover:bg-muted/20 transition-colors message-enter',
+        'group flex gap-3 sm:gap-4 px-4 sm:px-6 py-3 hover:bg-muted/20 transition-colors message-enter',
         isUser ? 'flex-row-reverse' : 'flex-row',
         className
       )}
     >
       {!isSystem && (
         <div className="flex-shrink-0">
-          <Avatar className="h-8 w-8 ring-2 ring-background">
+          <Avatar className="h-9 w-9 sm:h-8 sm:w-8 ring-2 ring-background">
             {providerIcon ? (
               <div className="w-full h-full flex items-center justify-center bg-muted/50 p-1.5">
                 {providerIcon}
@@ -145,11 +145,11 @@ export function MessageBubble({
       >
         {!isSystem && (
           <div className={cn('flex items-center gap-2 mb-1.5', isUser ? 'flex-row-reverse' : 'flex-row')}>
-            <span className="text-xs font-medium text-foreground/70">
+            <span className="text-sm sm:text-xs font-medium text-foreground/70">
               {role === MESSAGE_ROLE_USER ? 'You' : (modelName || 'Assistant')}
             </span>
             {timestamp && (
-              <span className="text-xs text-muted-foreground">
+              <span className="text-sm sm:text-xs text-muted-foreground">
                 {timestamp.toLocaleTimeString('en-US', {
                   hour: 'numeric',
                   minute: '2-digit',
@@ -168,7 +168,7 @@ export function MessageBubble({
 
         <div
           className={cn(
-            'relative rounded-2xl px-5 py-3 max-w-[85%] sm:max-w-[75%]',
+            'relative rounded-2xl px-5 py-3 max-w-[92%] sm:max-w-[75%]',
             'break-words',
             // User messages: Solid red background, structured, slightly elevated
             isUser
@@ -212,7 +212,7 @@ export function MessageBubble({
           {showTypingIndicator ? (
             <TypingIndicator className="px-0 py-1" />
           ) : (
-            <div className="text-sm leading-[1.6] w-full">
+            <div className="text-base sm:text-sm leading-[1.6] w-full">
               {/* Thinking moved out */}
               <MarkdownRenderer content={mainContent} />
             </div>
