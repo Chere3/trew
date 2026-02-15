@@ -157,8 +157,13 @@ export function MessageComposer({
   }
 
   return (
-    <div className={cn('bg-transparent p-4 pb-4 sm:pb-6', className)}>
-      <div className="max-w-3xl mx-auto bg-background/80 backdrop-blur-sm border border-border/50 rounded-2xl p-4 sm:p-4 shadow-sm">
+    <div
+      className={cn(
+        'bg-transparent p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:pb-6',
+        className
+      )}
+    >
+      <div className="max-w-3xl mx-auto bg-background/80 backdrop-blur-sm border border-border/50 rounded-2xl p-4 shadow-sm">
         {files.length > 0 && (
           <div className="flex gap-2 overflow-x-auto pb-4 mb-2 scrollbar-hide">
             {files.map((file, index) => (
