@@ -389,6 +389,23 @@ export function ChatInterface() {
       });
   };
 
+  const finalizeTempAssistant = (tempId: string, fullText: string) => {
+    const finalText = fullText.trim();
+    setTempMessages((prev) =>
+      prev.map((m) => {
+        if (m.id !== tempId) return m;
+        if (!finalText) {
+          return {
+            ...m,
+            isStreaming: false,
+            content: "Response failed to generate. Please try again.",
+          };
+        }
+        return { ...m, isStreaming: false };
+      })
+    );
+  };
+
   const handleAIResponse = async (chatId: string, pendingUserMessage?: { content: string; attachments: File[] }) => {
     const tempId = `ai-${Date.now()}`;
 
@@ -475,11 +492,7 @@ export function ChatInterface() {
         const { done, value } = await reader.read();
 
         if (done) {
-          setTempMessages((prev) =>
-            prev.map(m =>
-              m.id === tempId ? { ...m, isStreaming: false } : m
-            )
-          );
+          finalizeTempAssistant(tempId, assistantMessageContent);
           break;
         }
 
@@ -487,7 +500,7 @@ export function ChatInterface() {
         assistantMessageContent += chunk;
 
         setTempMessages((prev) =>
-          prev.map(m =>
+          prev.map((m) =>
             m.id === tempId
               ? { ...m, content: assistantMessageContent, isStreaming: true }
               : m
@@ -501,7 +514,13 @@ export function ChatInterface() {
 
     } catch (e) {
       console.error("AI response failed", e);
-      setTempMessages((prev) => prev.filter(m => m.id !== tempId));
+      setTempMessages((prev) =>
+        prev.map((m) =>
+          m.id === tempId
+            ? { ...m, isStreaming: false, content: "Response failed to generate. Please try again." }
+            : m
+        )
+      );
     }
   };
 
@@ -688,11 +707,7 @@ export function ChatInterface() {
         const { done, value } = await reader.read();
 
         if (done) {
-          setTempMessages((prev) =>
-            prev.map(m =>
-              m.id === tempId ? { ...m, isStreaming: false } : m
-            )
-          );
+          finalizeTempAssistant(tempId, assistantMessageContent);
           break;
         }
 
@@ -700,7 +715,7 @@ export function ChatInterface() {
         assistantMessageContent += chunk;
 
         setTempMessages((prev) =>
-          prev.map(m =>
+          prev.map((m) =>
             m.id === tempId
               ? { ...m, content: assistantMessageContent, isStreaming: true }
               : m
@@ -711,8 +726,8 @@ export function ChatInterface() {
       await mutateInitialMessages();
       mutate("/api/chats", async (currentChats: Chat[] | undefined) => {
         if (!currentChats) return currentChats;
-        return currentChats.map(chat => 
-          chat.id === chatId 
+        return currentChats.map((chat) =>
+          chat.id === chatId
             ? { ...chat, updatedAt: Date.now() }
             : chat
         );
@@ -720,7 +735,13 @@ export function ChatInterface() {
 
     } catch (e) {
       console.error("AI response failed", e);
-      setTempMessages((prev) => prev.filter(m => m.id !== tempId));
+      setTempMessages((prev) =>
+        prev.map((m) =>
+          m.id === tempId
+            ? { ...m, isStreaming: false, content: "Response failed to generate. Please try again." }
+            : m
+        )
+      );
     }
   };
 
