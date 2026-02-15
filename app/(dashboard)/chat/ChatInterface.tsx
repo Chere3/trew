@@ -44,6 +44,7 @@ export function ChatInterface() {
   });
   const [selectedModel, setSelectedModel] = useState(AUTO_MODEL_ID);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [keyboardInset, setKeyboardInset] = useState(0);
 
   const { data: session } = useSession();
   const router = useRouter();
@@ -74,6 +75,31 @@ export function ChatInterface() {
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const lastUserMessageIdRef = useRef<string | null>(null);
   const isLoadingOlderRef = useRef(false);
+
+  // Mobile keyboard avoidance: keep composer above the on-screen keyboard.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const vv = window.visualViewport;
+    if (!vv) return;
+
+    const onViewportChange = () => {
+      // visualViewport.height excludes the browser UI + keyboard. When the keyboard opens,
+      // `innerHeight - visualViewport.height` approximates the occluded bottom area.
+      const inset = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+      setKeyboardInset(inset);
+    };
+
+    onViewportChange();
+    vv.addEventListener("resize", onViewportChange);
+    vv.addEventListener("scroll", onViewportChange);
+    window.addEventListener("orientationchange", onViewportChange);
+
+    return () => {
+      vv.removeEventListener("resize", onViewportChange);
+      vv.removeEventListener("scroll", onViewportChange);
+      window.removeEventListener("orientationchange", onViewportChange);
+    };
+  }, []);
 
   // Initialize messages when chat changes or initial data loads
   useEffect(() => {
@@ -928,6 +954,7 @@ export function ChatInterface() {
                   userName={user.name}
                 />
               ) : (
+                <div style={{ paddingBottom: `calc(10rem + ${keyboardInset}px)` }}>
                 <MessageList 
                   className="pb-40 sm:pb-44 pt-5 sm:pt-6" // Extra bottom padding so composer never overlaps message actions
                   messages={messages}
@@ -962,12 +989,19 @@ export function ChatInterface() {
                     return <Icon className={cn("h-4 w-4", config.color)} />;
                   }}
                 />
+                </div>
               )}
           </div>
         </div>
 
         {/* Message Composer - Fixed Bottom */}
-        <div className="absolute bottom-0 left-0 right-0 z-20">
+        <div
+          className="absolute bottom-0 left-0 right-0 z-20"
+          style={{
+            transform: keyboardInset ? `translateY(-${keyboardInset}px)` : undefined,
+            transition: "transform 180ms ease",
+          }}
+        >
              <MessageComposer
                 onSend={handleSend}
                 placeholder="Ask anything..."
