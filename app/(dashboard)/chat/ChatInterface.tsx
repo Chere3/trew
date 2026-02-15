@@ -545,9 +545,13 @@ export function ChatInterface() {
         );
       }
 
-      await mutateInitialMessages();
+      const updated = await mutateInitialMessages();
+      const finalText = assistantMessageContent.trim();
+      if (updated?.messages?.some((m) => m.role === MESSAGE_ROLE_ASSISTANT && (m.content || "").trim() === finalText)) {
+        setTempMessages((prev) => prev.filter((m) => m.id !== tempId));
+      }
+
       mutate("/api/chats");
-      // Do not force-remove temp assistant here; keep it visible until server state catches up.
 
     } catch (e) {
       console.error("AI response failed", e);
@@ -760,7 +764,12 @@ export function ChatInterface() {
         );
       }
 
-      await mutateInitialMessages();
+      const updated = await mutateInitialMessages();
+      const finalText = assistantMessageContent.trim();
+      if (updated?.messages?.some((m) => m.role === MESSAGE_ROLE_ASSISTANT && (m.content || "").trim() === finalText)) {
+        setTempMessages((prev) => prev.filter((m) => m.id !== tempId));
+      }
+
       mutate("/api/chats", async (currentChats: Chat[] | undefined) => {
         if (!currentChats) return currentChats;
         return currentChats.map((chat) =>
