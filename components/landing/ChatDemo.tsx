@@ -22,7 +22,7 @@ type DemoStep = {
 const MODELS = {
   gpt4: { name: "GPT-4o", color: "text-emerald-600 dark:text-emerald-400" },
   claude: { name: "Claude 3.5", color: "text-amber-600 dark:text-amber-400" },
-  gemini: { name: "Gemini Pro", color: "text-violet-600 dark:text-violet-400" },
+  gemini: { name: "Gemini Pro", color: "text-rose-600 dark:text-rose-400" },
 };
 
 const DEMO_SCRIPT: DemoStep[] = [
@@ -68,33 +68,37 @@ function MessageBubble({ message, isTyping }: { message: Message; isTyping?: boo
     <div className={cn("flex gap-3", isUser ? "flex-row-reverse" : "flex-row")}>
       <div
         className={cn(
-          "flex h-7 w-7 shrink-0 items-center justify-center rounded-full border",
-          isUser
-            ? "border-border bg-muted"
-            : "border-border bg-card"
+          "flex h-8 w-8 shrink-0 items-center justify-center rounded-full border ring-2 ring-background",
+          isUser ? "border-border bg-muted" : "border-border bg-card"
         )}
       >
         {isUser ? (
-          <User className="h-3.5 w-3.5 text-muted-foreground" />
+          <User className="h-4 w-4 text-muted-foreground" />
         ) : (
-          <Bot className={cn("h-3.5 w-3.5", message.modelColor || "text-muted-foreground")} />
+          <Bot className={cn("h-4 w-4", message.modelColor || "text-muted-foreground")} />
         )}
       </div>
-      <div className={cn("flex max-w-[85%] flex-col gap-1", isUser ? "items-end" : "items-start")}>
-        {!isUser && message.model && (
-          <span className={cn("text-[10px] font-medium", message.modelColor)}>
-            {MODELS[message.model as keyof typeof MODELS]?.name}
-          </span>
-        )}
+
+      <div className={cn("flex max-w-[85%] flex-col min-w-0", isUser ? "items-end" : "items-start")}>
+        {!isUser && message.model ? (
+          <div className={cn("mb-1.5 flex items-center gap-2", isUser ? "flex-row-reverse" : "flex-row")}>
+            <span className="text-xs font-medium text-foreground/70">
+              {MODELS[message.model as keyof typeof MODELS]?.name}
+            </span>
+          </div>
+        ) : null}
+
         <div
           className={cn(
-            "rounded-xl px-3 py-2 text-sm leading-relaxed",
+            "relative rounded-2xl px-5 py-3 max-w-[85%] sm:max-w-[75%] break-words",
             isUser
-              ? "bg-primary text-primary-foreground"
-              : "bg-muted text-foreground"
+              ? "bg-primary text-primary-foreground rounded-br-sm shadow-soft"
+              : "bg-card text-foreground rounded-bl-sm border border-border/60 shadow-soft"
           )}
         >
-          {isTyping ? <TypingIndicator /> : (
+          {isTyping ? (
+            <TypingIndicator />
+          ) : (
             <span className="whitespace-pre-wrap">{message.content}</span>
           )}
         </div>
@@ -206,7 +210,7 @@ export function ChatDemo() {
           <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
         </div>
         <div className="flex items-center gap-1">
-          <span className="h-2 w-2 rounded-full bg-emerald-500" />
+          <span className="h-2 w-2 rounded-full bg-primary/40" />
           <span className="text-[10px] text-muted-foreground">Live</span>
         </div>
       </div>
