@@ -179,6 +179,8 @@ export function ChatDemo() {
   const [showSwitch, setShowSwitch] = useState<{ from: number; to: number } | null>(null);
   const [isInView, setIsInView] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const messagesScrollRef = useRef<HTMLDivElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const modelsLoadedRef = useRef(false);
   const animTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -355,7 +357,16 @@ export function ChatDemo() {
     return () => clearTimers();
   }, [stepIndex, isInView, currentModelIndex]);
 
-  const visibleMessages = messages.slice(-4);
+  // Keep demo visually alive but prevent unbounded growth impacting render
+  const visibleMessages = messages.slice(-12);
+
+  // Smooth auto-scroll inside the demo (never scrolls the page)
+  useEffect(() => {
+    if (!isInView) return;
+    // Ensure we scroll the internal container by targeting an element inside it
+    // (thinkingText changes can increase height, so keep following the end anchor)
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [visibleMessages.length, isTyping, isThinking, thinkingText, showSwitch, isInView]);
 
   return (
     <div
@@ -379,8 +390,8 @@ export function ChatDemo() {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-hidden px-4 py-4">
-        <div className="flex h-full flex-col justify-end space-y-4">
+      <div ref={messagesScrollRef} className="flex-1 overflow-y-auto overflow-x-hidden px-4 py-4 custom-scrollbar">
+        <div className="flex min-h-full flex-col justify-end space-y-4">
           {visibleMessages.map((message, index) => (
             <MessageBubble
               key={message.id}
@@ -397,6 +408,7 @@ export function ChatDemo() {
           {showSwitch && <ModelSwitchIndicator from={showSwitch.from} to={showSwitch.to} models={demoModels} />}
 
           {isThinking ? <ThinkingCollapsible content={thinkingText} isStreaming /> : null}
+          <div ref={messagesEndRef} />
         </div>
       </div>
 
