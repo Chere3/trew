@@ -20,7 +20,7 @@ type Message = {
 };
 
 type DemoStep = {
-  type: "user" | "assistant" | "switch";
+  type: "user" | "assistant" | "switch" | "thinking";
   content?: string;
   model?: string;
 };
@@ -45,12 +45,13 @@ const DEMO_SCRIPT: DemoStep[] = [
       "Here's a clean function to parse JSON safely:\n\n```python\nimport json\n\ndef parse_json(data: str) -> dict:\n    try:\n        return json.loads(data)\n    except json.JSONDecodeError:\n        return {}\n```",
     model: "m0",
   },
-  { type: "user", content: "Now review it for edge cases" },
+  { type: "user", content: "I'm getting a hydration error in Next.js. How do I debug it?" },
   { type: "switch", model: "m1" },
+  { type: "thinking", model: "m1" },
   {
     type: "assistant",
     content:
-      "Good start! Consider these improvements:\n\n1. Handle `None` input\n2. Add type hints for return\n3. Log errors for debugging\n4. Consider returning `Optional[dict]`",
+      "Common causes are browser-only APIs (window/localStorage), non-deterministic values (Date/Math.random), or invalid HTML nesting.\n\nDebug checklist:\n1) Check the console hydration diff\n2) Search for `new Date()` in render\n3) Move browser-only logic into `useEffect`\n4) Ensure server/client output matches",
     model: "m1",
   },
   { type: "user", content: "Summarize the key changes" },
@@ -58,7 +59,7 @@ const DEMO_SCRIPT: DemoStep[] = [
   {
     type: "assistant",
     content:
-      "Key improvements: null-safety, better typing, error logging, and explicit Optional return type for clearer API contracts.",
+      "Key improvements: make rendering deterministic, isolate browser-only code to effects, and validate markup so server + client output match.",
     model: "m2",
   },
 ];
@@ -73,13 +74,31 @@ function TypingIndicator() {
   );
 }
 
+function ThinkingIndicator() {
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+        <span className="inline-flex h-1.5 w-1.5 animate-pulse rounded-full bg-muted-foreground/60" />
+        <span>Thinking</span>
+      </div>
+      <div className="space-y-1.5">
+        <div className="h-2 w-56 rounded bg-muted-foreground/10" />
+        <div className="h-2 w-44 rounded bg-muted-foreground/10" />
+        <div className="h-2 w-32 rounded bg-muted-foreground/10" />
+      </div>
+    </div>
+  );
+}
+
 function MessageBubble({
   message,
   isTyping,
+  isThinking,
   modelLabel,
 }: {
   message: Message;
   isTyping?: boolean;
+  isThinking?: boolean;
   modelLabel?: string;
 }) {
   const isUser = message.role === "user";
@@ -116,6 +135,8 @@ function MessageBubble({
         >
           {isTyping ? (
             <TypingIndicator />
+          ) : isThinking ? (
+            <ThinkingIndicator />
           ) : (
             <span className="whitespace-pre-wrap">{message.content}</span>
           )}
@@ -146,6 +167,7 @@ export function ChatDemo() {
   const [currentModelIndex, setCurrentModelIndex] = useState(0);
   const [stepIndex, setStepIndex] = useState(0);
   const [isTyping, setIsTyping] = useState(false);
+  const [isThinking, setIsThinking] = useState(false);
   const [showSwitch, setShowSwitch] = useState<{ from: number; to: number } | null>(null);
   const [isInView, setIsInView] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -215,6 +237,8 @@ export function ChatDemo() {
         setCurrentModelIndex(0);
         setStepIndex(0);
         setShowSwitch(null);
+        setIsTyping(false);
+        setIsThinking(false);
       }, 3000);
       return () => clearTimeout(timeout);
     }
@@ -234,6 +258,15 @@ export function ChatDemo() {
         setMessages((prev) => [...prev, { id: `msg-${stepIndex}`, role: "user", content: step.content! }]);
         setStepIndex((i) => i + 1);
       }, 800);
+    } else if (step.type === "thinking") {
+      const modelIndex = resolveStepModelIndex(step.model);
+      setIsThinking(true);
+      setMessages((prev) => [...prev, { id: `msg-${stepIndex}`, role: "assistant", content: "", model: `m${modelIndex}` }]);
+
+      timeout = setTimeout(() => {
+        setIsThinking(false);
+        setStepIndex((i) => i + 1);
+      }, 1400);
     } else if (step.type === "assistant") {
       const modelIndex = resolveStepModelIndex(step.model);
       setIsTyping(true);
@@ -283,6 +316,7 @@ export function ChatDemo() {
                   : undefined
               }
               isTyping={isTyping && index === messages.length - 1 && message.role === "assistant"}
+              isThinking={isThinking && index === messages.length - 1 && message.role === "assistant"}
             />
           ))}
           {showSwitch && <ModelSwitchIndicator from={showSwitch.from} to={showSwitch.to} models={demoModels} />}
