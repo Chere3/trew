@@ -807,7 +807,7 @@ export function ChatInterface() {
   };
 
   return (
-    <div className="relative flex h-screen overflow-hidden bg-background font-sans">
+    <div className="relative flex h-[100dvh] overflow-hidden bg-background font-sans">
       {/* Sidebar Toggle (Mobile/Collapsed) */}
       {sidebarCollapsed && (
         <div className="absolute left-4 top-4 z-50">
