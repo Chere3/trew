@@ -180,6 +180,10 @@ export function ChatDemo() {
   const [isInView, setIsInView] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  const modelsLoadedRef = useRef(false);
+  const animTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const thinkingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   const currentModel = demoModels[currentModelIndex] || demoModels[0];
 
   // Intersection observer
@@ -194,6 +198,7 @@ export function ChatDemo() {
 
   useEffect(() => {
     if (!isInView) return;
+    if (modelsLoadedRef.current) return;
 
     let cancelled = false;
 
@@ -215,7 +220,10 @@ export function ChatDemo() {
         if (!picked.length) return;
 
         const next: DemoModel[] = picked.map((m) => ({ id: m.id, name: m.name, provider: m.provider }));
-        if (!cancelled) setDemoModels(next);
+        if (!cancelled) {
+          setDemoModels(next);
+          modelsLoadedRef.current = true;
+        }
       } catch {
         // fail-open to fallback models
       }
@@ -234,28 +242,57 @@ export function ChatDemo() {
     return 0;
   };
 
+  const clearTimers = () => {
+    if (animTimeoutRef.current) {
+      clearTimeout(animTimeoutRef.current);
+      animTimeoutRef.current = null;
+    }
+    if (thinkingIntervalRef.current) {
+      clearInterval(thinkingIntervalRef.current);
+      thinkingIntervalRef.current = null;
+    }
+  };
+
   const startThinkingReveal = (fullText: string) => {
+    if (thinkingIntervalRef.current) {
+      clearInterval(thinkingIntervalRef.current);
+      thinkingIntervalRef.current = null;
+    }
+
     const seeded = fullText.slice(0, 2);
     setThinkingText(seeded);
 
     let i = 2;
-    const interval = setInterval(() => {
+    thinkingIntervalRef.current = setInterval(() => {
       i += 2;
       const next = fullText.slice(0, i);
       setThinkingText(next);
-      if (i >= fullText.length) clearInterval(interval);
+      if (i >= fullText.length && thinkingIntervalRef.current) {
+        clearInterval(thinkingIntervalRef.current);
+        thinkingIntervalRef.current = null;
+      }
     }, 24);
 
-    return () => clearInterval(interval);
+    return () => {
+      if (thinkingIntervalRef.current) {
+        clearInterval(thinkingIntervalRef.current);
+        thinkingIntervalRef.current = null;
+      }
+    };
   };
 
   // Animation loop
   useEffect(() => {
-    if (!isInView) return;
+    if (!isInView) {
+      clearTimers();
+      return;
+    }
+
+    clearTimers();
 
     const step = DEMO_SCRIPT[stepIndex];
     if (!step) {
-      const timeout = setTimeout(() => {
+      animTimeoutRef.current = setTimeout(() => {
         setMessages([]);
         setCurrentModelIndex(0);
         setStepIndex(0);
@@ -264,21 +301,20 @@ export function ChatDemo() {
         setIsThinking(false);
         setThinkingText("");
       }, 3000);
-      return () => clearTimeout(timeout);
-    }
 
-    let timeout: NodeJS.Timeout;
+      return () => clearTimers();
+    }
 
     if (step.type === "switch") {
       const toIndex = resolveStepModelIndex(step.model);
       setShowSwitch({ from: currentModelIndex, to: toIndex });
-      timeout = setTimeout(() => {
+      animTimeoutRef.current = setTimeout(() => {
         setCurrentModelIndex(toIndex);
         setShowSwitch(null);
         setStepIndex((i) => i + 1);
       }, 1200);
     } else if (step.type === "user") {
-      timeout = setTimeout(() => {
+      animTimeoutRef.current = setTimeout(() => {
         setMessages((prev) => [...prev, { id: `msg-${stepIndex}`, role: "user", content: step.content! }]);
         setStepIndex((i) => i + 1);
       }, 800);
@@ -288,7 +324,7 @@ export function ChatDemo() {
 
       const stop = startThinkingReveal(fullText);
 
-      timeout = setTimeout(() => {
+      animTimeoutRef.current = setTimeout(() => {
         stop();
         setIsThinking(false);
         setStepIndex((i) => i + 1);
@@ -298,14 +334,14 @@ export function ChatDemo() {
       setIsTyping(true);
       setMessages((prev) => [...prev, { id: `msg-${stepIndex}`, role: "assistant", content: "", model: `m${modelIndex}` }]);
 
-      timeout = setTimeout(() => {
+      animTimeoutRef.current = setTimeout(() => {
         setIsTyping(false);
         setMessages((prev) => prev.map((m) => (m.id === `msg-${stepIndex}` ? { ...m, content: step.content! } : m)));
         setStepIndex((i) => i + 1);
       }, 1500);
     }
 
-    return () => clearTimeout(timeout);
+    return () => clearTimers();
   }, [stepIndex, isInView, currentModelIndex]);
 
   const visibleMessages = messages.slice(-4);
