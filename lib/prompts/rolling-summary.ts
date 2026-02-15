@@ -8,6 +8,7 @@ import {
     MESSAGE_ROLE_ASSISTANT,
     MESSAGE_ROLE_SYSTEM
 } from "@/lib/constants";
+import { getCached, CACHE_KEYS, CACHE_TTL } from "@/lib/cache";
 
 export interface MessageForSummary {
     role: string;
@@ -25,16 +26,20 @@ export interface MessagesWithSummary {
  * Get messages with rolling summary applied
  * Keeps the last N messages intact and uses summary for older messages
  */
-export function getMessagesWithSummary(
+export async function getMessagesWithSummary(
     chatId: string,
     keepRecent: number = ROLLING_SUMMARY_KEEP_RECENT
-): MessagesWithSummary {
+): Promise<MessagesWithSummary> {
     // Fetch all messages for the chat
-    const allMessages = db
-        .prepare(
-            "SELECT role, content, attachments, createdAt FROM message WHERE chatId = ? ORDER BY createdAt ASC"
-        )
-        .all(chatId) as MessageForSummary[];
+    const allMessagesResult = await db.query(
+        'SELECT role, content, attachments, "createdAt" FROM message WHERE "chatId" = $1 ORDER BY "createdAt" ASC',
+        [chatId]
+    );
+    // Convert createdAt from string (PostgreSQL bigint) to number
+    const allMessages = allMessagesResult.rows.map((msg: any) => ({
+        ...msg,
+        createdAt: typeof msg.createdAt === 'string' ? parseInt(msg.createdAt, 10) : (msg.createdAt || Date.now()),
+    })) as MessageForSummary[];
 
     // If we have fewer messages than the minimum threshold, return all messages without summary
     if (allMessages.length < ROLLING_SUMMARY_MIN_MESSAGES) {
@@ -44,12 +49,20 @@ export function getMessagesWithSummary(
         };
     }
 
-    // Get existing summary from chat table
-    const chat = db
-        .prepare("SELECT summary FROM chat WHERE id = ?")
-        .get(chatId) as { summary: string | null } | undefined;
-
-    const existingSummary = chat?.summary || null;
+    // Get existing summary from chat table (with caching)
+    const cacheKey = CACHE_KEYS.CHAT_SUMMARY(chatId);
+    const existingSummary = await getCached(
+        cacheKey,
+        async () => {
+            const chatResult = await db.query(
+                'SELECT summary FROM chat WHERE id = $1',
+                [chatId]
+            );
+            const chat = chatResult.rows[0] as { summary: string | null } | undefined;
+            return chat?.summary || null;
+        },
+        CACHE_TTL.CHAT_SUMMARY
+    );
 
     // Split messages: keep recent ones intact, older ones will be summarized
     const recentMessages = allMessages.slice(-keepRecent);
@@ -72,11 +85,15 @@ export function getMessagesWithSummary(
 }
 
 /**
- * Update the summary in the chat table
+ * Update the summary in the chat table (with cache invalidation)
  */
-export function updateSummary(chatId: string, summary: string): void {
+export async function updateSummary(chatId: string, summary: string): Promise<void> {
     try {
-        db.prepare("UPDATE chat SET summary = ? WHERE id = ?").run(summary, chatId);
+        await db.query('UPDATE chat SET summary = $1 WHERE id = $2', [summary, chatId]);
+        
+        // Update cache with new summary (write-through)
+        const { setCache } = await import("@/lib/cache/redis");
+        await setCache(CACHE_KEYS.CHAT_SUMMARY(chatId), summary, CACHE_TTL.CHAT_SUMMARY);
     } catch (error) {
         console.error("Failed to update summary:", error);
         throw error;
@@ -203,15 +220,19 @@ function fallbackSummary(messages: MessageForSummary[]): string {
 /**
  * Get older messages that should be summarized (everything except the last N messages)
  */
-export function getOlderMessages(
+export async function getOlderMessages(
     chatId: string,
     keepRecent: number = ROLLING_SUMMARY_KEEP_RECENT
-): MessageForSummary[] {
-    const allMessages = db
-        .prepare(
-            "SELECT role, content, attachments, createdAt FROM message WHERE chatId = ? ORDER BY createdAt ASC"
-        )
-        .all(chatId) as MessageForSummary[];
+): Promise<MessageForSummary[]> {
+    const allMessagesResult = await db.query(
+        'SELECT role, content, attachments, "createdAt" FROM message WHERE "chatId" = $1 ORDER BY "createdAt" ASC',
+        [chatId]
+    );
+    // Convert createdAt from string (PostgreSQL bigint) to number
+    const allMessages = allMessagesResult.rows.map((msg: any) => ({
+        ...msg,
+        createdAt: typeof msg.createdAt === 'string' ? parseInt(msg.createdAt, 10) : (msg.createdAt || Date.now()),
+    })) as MessageForSummary[];
 
     if (allMessages.length <= keepRecent) {
         return [];

@@ -4,333 +4,404 @@ import type { TokenStats, TimeSeriesPoint, ModelStats } from "./types";
 /**
  * Aggregate token usage by user
  */
-export function aggregateByUser(userId: string, startDate?: number, endDate?: number): TokenStats {
+export async function aggregateByUser(userId: string, startDate?: number, endDate?: number): Promise<TokenStats> {
     let query = `
         SELECT 
-            SUM(promptTokens) as totalPromptTokens,
-            SUM(completionTokens) as totalCompletionTokens,
-            SUM(totalTokens) as totalTokens,
-            SUM(COALESCE(cachedTokens, 0)) as totalCachedTokens,
-            SUM(COALESCE(reasoningTokens, 0)) as totalReasoningTokens,
-            SUM(cost) as totalCost,
-            AVG(latency) as averageLatency,
-            COUNT(*) as requestCount
+            SUM("promptTokens") as "totalPromptTokens",
+            SUM("completionTokens") as "totalCompletionTokens",
+            SUM("totalTokens") as "totalTokens",
+            SUM(COALESCE("cachedTokens", 0)) as "totalCachedTokens",
+            SUM(COALESCE("reasoningTokens", 0)) as "totalReasoningTokens",
+            SUM(cost) as "totalCost",
+            AVG(latency) as "averageLatency",
+            COUNT(*) as "requestCount"
         FROM token_usage
-        WHERE userId = ?
+        WHERE "userId" = $1
     `;
 
     const params: any[] = [userId];
+    let paramIndex = 2;
 
     if (startDate) {
-        query += " AND createdAt >= ?";
+        query += ` AND "createdAt" >= $${paramIndex}`;
         params.push(startDate);
+        paramIndex++;
     }
 
     if (endDate) {
-        query += " AND createdAt <= ?";
+        query += ` AND "createdAt" <= $${paramIndex}`;
         params.push(endDate);
+        paramIndex++;
     }
 
-    const result = db.prepare(query).get(...params) as {
-        totalPromptTokens: number;
-        totalCompletionTokens: number;
-        totalTokens: number;
-        totalCachedTokens: number;
-        totalReasoningTokens: number;
-        totalCost: number;
-        averageLatency: number | null;
-        requestCount: number;
+    const result = await db.query(query, params);
+    if (result.rows.length === 0) {
+        // Return zero values if no data
+        return {
+            totalPromptTokens: 0,
+            totalCompletionTokens: 0,
+            totalTokens: 0,
+            totalCachedTokens: 0,
+            totalReasoningTokens: 0,
+            totalCost: 0,
+            averageLatency: undefined,
+            requestCount: 0,
+            averageTokensPerRequest: 0,
+            averageCostPerRequest: 0,
+        };
+    }
+    
+    const row = result.rows[0] as {
+        totalPromptTokens: string;
+        totalCompletionTokens: string;
+        totalTokens: string;
+        totalCachedTokens: string;
+        totalReasoningTokens: string;
+        totalCost: string;
+        averageLatency: string | null;
+        requestCount: string;
     };
 
-    const requestCount = result.requestCount || 0;
+    const requestCount = parseInt(row.requestCount) || 0;
 
     return {
-        totalPromptTokens: result.totalPromptTokens || 0,
-        totalCompletionTokens: result.totalCompletionTokens || 0,
-        totalTokens: result.totalTokens || 0,
-        totalCachedTokens: result.totalCachedTokens || 0,
-        totalReasoningTokens: result.totalReasoningTokens || 0,
-        totalCost: result.totalCost || 0,
-        averageLatency: result.averageLatency ? Math.round(result.averageLatency) : undefined,
+        totalPromptTokens: parseInt(row.totalPromptTokens) || 0,
+        totalCompletionTokens: parseInt(row.totalCompletionTokens) || 0,
+        totalTokens: parseInt(row.totalTokens) || 0,
+        totalCachedTokens: parseInt(row.totalCachedTokens) || 0,
+        totalReasoningTokens: parseInt(row.totalReasoningTokens) || 0,
+        totalCost: parseFloat(row.totalCost) || 0,
+        averageLatency: row.averageLatency ? Math.round(parseFloat(row.averageLatency)) : undefined,
         requestCount,
-        averageTokensPerRequest: requestCount > 0 ? (result.totalTokens || 0) / requestCount : 0,
-        averageCostPerRequest: requestCount > 0 ? (result.totalCost || 0) / requestCount : 0,
+        averageTokensPerRequest: requestCount > 0 ? (parseInt(row.totalTokens) || 0) / requestCount : 0,
+        averageCostPerRequest: requestCount > 0 ? (parseFloat(row.totalCost) || 0) / requestCount : 0,
     };
 }
 
 /**
  * Aggregate token usage by chat
  */
-export function aggregateByChat(chatId: string, startDate?: number, endDate?: number): TokenStats {
+export async function aggregateByChat(chatId: string, startDate?: number, endDate?: number): Promise<TokenStats> {
     let query = `
         SELECT 
-            SUM(promptTokens) as totalPromptTokens,
-            SUM(completionTokens) as totalCompletionTokens,
-            SUM(totalTokens) as totalTokens,
-            SUM(COALESCE(cachedTokens, 0)) as totalCachedTokens,
-            SUM(COALESCE(reasoningTokens, 0)) as totalReasoningTokens,
-            SUM(cost) as totalCost,
-            AVG(latency) as averageLatency,
-            COUNT(*) as requestCount
+            SUM("promptTokens") as "totalPromptTokens",
+            SUM("completionTokens") as "totalCompletionTokens",
+            SUM("totalTokens") as "totalTokens",
+            SUM(COALESCE("cachedTokens", 0)) as "totalCachedTokens",
+            SUM(COALESCE("reasoningTokens", 0)) as "totalReasoningTokens",
+            SUM(cost) as "totalCost",
+            AVG(latency) as "averageLatency",
+            COUNT(*) as "requestCount"
         FROM token_usage
-        WHERE chatId = ?
+        WHERE "chatId" = $1
     `;
 
     const params: any[] = [chatId];
+    let paramIndex = 2;
 
     if (startDate) {
-        query += " AND createdAt >= ?";
+        query += ` AND "createdAt" >= $${paramIndex}`;
         params.push(startDate);
+        paramIndex++;
     }
 
     if (endDate) {
-        query += " AND createdAt <= ?";
+        query += ` AND "createdAt" <= $${paramIndex}`;
         params.push(endDate);
+        paramIndex++;
     }
 
-    const result = db.prepare(query).get(...params) as {
-        totalPromptTokens: number;
-        totalCompletionTokens: number;
-        totalTokens: number;
-        totalCachedTokens: number;
-        totalReasoningTokens: number;
-        totalCost: number;
-        averageLatency: number | null;
-        requestCount: number;
+    const result = await db.query(query, params);
+    if (result.rows.length === 0) {
+        // Return zero values if no data
+        return {
+            totalPromptTokens: 0,
+            totalCompletionTokens: 0,
+            totalTokens: 0,
+            totalCachedTokens: 0,
+            totalReasoningTokens: 0,
+            totalCost: 0,
+            averageLatency: undefined,
+            requestCount: 0,
+            averageTokensPerRequest: 0,
+            averageCostPerRequest: 0,
+        };
+    }
+    
+    const row = result.rows[0] as {
+        totalPromptTokens: string;
+        totalCompletionTokens: string;
+        totalTokens: string;
+        totalCachedTokens: string;
+        totalReasoningTokens: string;
+        totalCost: string;
+        averageLatency: string | null;
+        requestCount: string;
     };
 
-    const requestCount = result.requestCount || 0;
+    const requestCount = parseInt(row.requestCount) || 0;
 
     return {
-        totalPromptTokens: result.totalPromptTokens || 0,
-        totalCompletionTokens: result.totalCompletionTokens || 0,
-        totalTokens: result.totalTokens || 0,
-        totalCachedTokens: result.totalCachedTokens || 0,
-        totalReasoningTokens: result.totalReasoningTokens || 0,
-        totalCost: result.totalCost || 0,
-        averageLatency: result.averageLatency ? Math.round(result.averageLatency) : undefined,
+        totalPromptTokens: parseInt(row.totalPromptTokens) || 0,
+        totalCompletionTokens: parseInt(row.totalCompletionTokens) || 0,
+        totalTokens: parseInt(row.totalTokens) || 0,
+        totalCachedTokens: parseInt(row.totalCachedTokens) || 0,
+        totalReasoningTokens: parseInt(row.totalReasoningTokens) || 0,
+        totalCost: parseFloat(row.totalCost) || 0,
+        averageLatency: row.averageLatency ? Math.round(parseFloat(row.averageLatency)) : undefined,
         requestCount,
-        averageTokensPerRequest: requestCount > 0 ? (result.totalTokens || 0) / requestCount : 0,
-        averageCostPerRequest: requestCount > 0 ? (result.totalCost || 0) / requestCount : 0,
+        averageTokensPerRequest: requestCount > 0 ? (parseInt(row.totalTokens) || 0) / requestCount : 0,
+        averageCostPerRequest: requestCount > 0 ? (parseFloat(row.totalCost) || 0) / requestCount : 0,
     };
 }
 
 /**
  * Aggregate token usage by model
  */
-export function aggregateByModel(model: string, startDate?: number, endDate?: number): TokenStats {
+export async function aggregateByModel(model: string, startDate?: number, endDate?: number): Promise<TokenStats> {
     let query = `
         SELECT 
-            SUM(promptTokens) as totalPromptTokens,
-            SUM(completionTokens) as totalCompletionTokens,
-            SUM(totalTokens) as totalTokens,
-            SUM(COALESCE(cachedTokens, 0)) as totalCachedTokens,
-            SUM(COALESCE(reasoningTokens, 0)) as totalReasoningTokens,
-            SUM(cost) as totalCost,
-            AVG(latency) as averageLatency,
-            COUNT(*) as requestCount
+            SUM("promptTokens") as "totalPromptTokens",
+            SUM("completionTokens") as "totalCompletionTokens",
+            SUM("totalTokens") as "totalTokens",
+            SUM(COALESCE("cachedTokens", 0)) as "totalCachedTokens",
+            SUM(COALESCE("reasoningTokens", 0)) as "totalReasoningTokens",
+            SUM(cost) as "totalCost",
+            AVG(latency) as "averageLatency",
+            COUNT(*) as "requestCount"
         FROM token_usage
-        WHERE model = ?
+        WHERE model = $1
     `;
 
     const params: any[] = [model];
+    let paramIndex = 2;
 
     if (startDate) {
-        query += " AND createdAt >= ?";
+        query += ` AND "createdAt" >= $${paramIndex}`;
         params.push(startDate);
+        paramIndex++;
     }
 
     if (endDate) {
-        query += " AND createdAt <= ?";
+        query += ` AND "createdAt" <= $${paramIndex}`;
         params.push(endDate);
+        paramIndex++;
     }
 
-    const result = db.prepare(query).get(...params) as {
-        totalPromptTokens: number;
-        totalCompletionTokens: number;
-        totalTokens: number;
-        totalCachedTokens: number;
-        totalReasoningTokens: number;
-        totalCost: number;
-        averageLatency: number | null;
-        requestCount: number;
+    const result = await db.query(query, params);
+    if (result.rows.length === 0) {
+        // Return zero values if no data
+        return {
+            totalPromptTokens: 0,
+            totalCompletionTokens: 0,
+            totalTokens: 0,
+            totalCachedTokens: 0,
+            totalReasoningTokens: 0,
+            totalCost: 0,
+            averageLatency: undefined,
+            requestCount: 0,
+            averageTokensPerRequest: 0,
+            averageCostPerRequest: 0,
+        };
+    }
+    
+    const row = result.rows[0] as {
+        totalPromptTokens: string;
+        totalCompletionTokens: string;
+        totalTokens: string;
+        totalCachedTokens: string;
+        totalReasoningTokens: string;
+        totalCost: string;
+        averageLatency: string | null;
+        requestCount: string;
     };
 
-    const requestCount = result.requestCount || 0;
+    const requestCount = parseInt(row.requestCount) || 0;
 
     return {
-        totalPromptTokens: result.totalPromptTokens || 0,
-        totalCompletionTokens: result.totalCompletionTokens || 0,
-        totalTokens: result.totalTokens || 0,
-        totalCachedTokens: result.totalCachedTokens || 0,
-        totalReasoningTokens: result.totalReasoningTokens || 0,
-        totalCost: result.totalCost || 0,
-        averageLatency: result.averageLatency ? Math.round(result.averageLatency) : undefined,
+        totalPromptTokens: parseInt(row.totalPromptTokens) || 0,
+        totalCompletionTokens: parseInt(row.totalCompletionTokens) || 0,
+        totalTokens: parseInt(row.totalTokens) || 0,
+        totalCachedTokens: parseInt(row.totalCachedTokens) || 0,
+        totalReasoningTokens: parseInt(row.totalReasoningTokens) || 0,
+        totalCost: parseFloat(row.totalCost) || 0,
+        averageLatency: row.averageLatency ? Math.round(parseFloat(row.averageLatency)) : undefined,
         requestCount,
-        averageTokensPerRequest: requestCount > 0 ? (result.totalTokens || 0) / requestCount : 0,
-        averageCostPerRequest: requestCount > 0 ? (result.totalCost || 0) / requestCount : 0,
+        averageTokensPerRequest: requestCount > 0 ? (parseInt(row.totalTokens) || 0) / requestCount : 0,
+        averageCostPerRequest: requestCount > 0 ? (parseFloat(row.totalCost) || 0) / requestCount : 0,
     };
 }
 
 /**
  * Get time series data for a given scope
  */
-export function aggregateByTimePeriod(
+export async function aggregateByTimePeriod(
     scope: "user" | "chat" | "model",
     id: string,
     period: "day" | "week" | "month",
     startDate?: number,
     endDate?: number
-): TimeSeriesPoint[] {
+): Promise<TimeSeriesPoint[]> {
     let dateFormat: string;
     let dateGroupBy: string;
 
     switch (period) {
         case "day":
-            dateFormat = "datetime(createdAt / 1000, 'unixepoch', 'localtime')";
-            dateGroupBy = "date(createdAt / 1000, 'unixepoch', 'localtime')";
+            dateGroupBy = "DATE_TRUNC('day', TO_TIMESTAMP(\"createdAt\" / 1000))";
+            dateFormat = "TO_CHAR(" + dateGroupBy + ", 'YYYY-MM-DD')";
             break;
         case "week":
-            dateFormat = "strftime('%Y-W%W', datetime(createdAt / 1000, 'unixepoch', 'localtime'))";
-            dateGroupBy = "strftime('%Y-W%W', datetime(createdAt / 1000, 'unixepoch', 'localtime'))";
+            dateGroupBy = "DATE_TRUNC('week', TO_TIMESTAMP(\"createdAt\" / 1000))";
+            dateFormat = "TO_CHAR(" + dateGroupBy + ", 'IYYY-IW')";
             break;
         case "month":
-            dateFormat = "strftime('%Y-%m', datetime(createdAt / 1000, 'unixepoch', 'localtime'))";
-            dateGroupBy = "strftime('%Y-%m', datetime(createdAt / 1000, 'unixepoch', 'localtime'))";
+            dateGroupBy = "DATE_TRUNC('month', TO_TIMESTAMP(\"createdAt\" / 1000))";
+            dateFormat = "TO_CHAR(" + dateGroupBy + ", 'YYYY-MM')";
             break;
         default:
-            dateFormat = "date(createdAt / 1000, 'unixepoch', 'localtime')";
-            dateGroupBy = "date(createdAt / 1000, 'unixepoch', 'localtime')";
+            dateGroupBy = "DATE_TRUNC('day', TO_TIMESTAMP(\"createdAt\" / 1000))";
+            dateFormat = "TO_CHAR(" + dateGroupBy + ", 'YYYY-MM-DD')";
     }
 
     let whereClause = "";
     const params: any[] = [];
+    let paramIndex = 1;
 
     switch (scope) {
         case "user":
-            whereClause = "WHERE userId = ?";
+            whereClause = `WHERE "userId" = $${paramIndex}`;
             params.push(id);
+            paramIndex++;
             break;
         case "chat":
-            whereClause = "WHERE chatId = ?";
+            whereClause = `WHERE "chatId" = $${paramIndex}`;
             params.push(id);
+            paramIndex++;
             break;
         case "model":
-            whereClause = "WHERE model = ?";
+            whereClause = `WHERE model = $${paramIndex}`;
             params.push(id);
+            paramIndex++;
             break;
     }
 
     if (startDate) {
-        whereClause += " AND createdAt >= ?";
+        whereClause += ` AND "createdAt" >= $${paramIndex}`;
         params.push(startDate);
+        paramIndex++;
     }
 
     if (endDate) {
-        whereClause += " AND createdAt <= ?";
+        whereClause += ` AND "createdAt" <= $${paramIndex}`;
         params.push(endDate);
+        paramIndex++;
     }
 
     const query = `
         SELECT 
-            ${dateGroupBy} as dateGroup,
-            ${dateFormat} as dateLabel,
-            MIN(createdAt) as timestamp,
-            SUM(totalTokens) as tokens,
+            ${dateGroupBy} as "dateGroup",
+            ${dateFormat} as "dateLabel",
+            MIN("createdAt") as timestamp,
+            SUM("totalTokens") as tokens,
             SUM(cost) as cost,
-            COUNT(*) as requestCount
+            COUNT(*) as "requestCount"
         FROM token_usage
         ${whereClause}
         GROUP BY ${dateGroupBy}
         ORDER BY timestamp ASC
     `;
 
-    const results = db.prepare(query).all(...params) as Array<{
+    const result = await db.query(query, params);
+    const results = result.rows as Array<{
         dateGroup: string;
         dateLabel: string;
-        timestamp: number;
-        tokens: number;
-        cost: number;
-        requestCount: number;
+        timestamp: string;
+        tokens: string;
+        cost: string;
+        requestCount: string;
     }>;
 
     return results.map((r) => ({
-        timestamp: r.timestamp,
+        timestamp: typeof r.timestamp === 'string' ? parseInt(r.timestamp) : r.timestamp,
         date: r.dateLabel,
-        tokens: r.tokens || 0,
-        cost: r.cost || 0,
-        requestCount: r.requestCount || 0,
+        tokens: typeof r.tokens === 'string' ? parseInt(r.tokens) || 0 : (r.tokens || 0),
+        cost: typeof r.cost === 'string' ? parseFloat(r.cost) || 0 : (r.cost || 0),
+        requestCount: typeof r.requestCount === 'string' ? parseInt(r.requestCount) || 0 : (r.requestCount || 0),
     }));
 }
 
 /**
  * Get all models with their aggregated statistics
  */
-export function getAllModelStats(startDate?: number, endDate?: number): ModelStats[] {
+export async function getAllModelStats(startDate?: number, endDate?: number): Promise<ModelStats[]> {
     let query = `
         SELECT 
             model,
             provider,
-            SUM(promptTokens) as totalPromptTokens,
-            SUM(completionTokens) as totalCompletionTokens,
-            SUM(totalTokens) as totalTokens,
-            SUM(COALESCE(cachedTokens, 0)) as totalCachedTokens,
-            SUM(COALESCE(reasoningTokens, 0)) as totalReasoningTokens,
-            SUM(cost) as totalCost,
-            AVG(latency) as averageLatency,
-            COUNT(*) as requestCount
+            SUM("promptTokens") as "totalPromptTokens",
+            SUM("completionTokens") as "totalCompletionTokens",
+            SUM("totalTokens") as "totalTokens",
+            SUM(COALESCE("cachedTokens", 0)) as "totalCachedTokens",
+            SUM(COALESCE("reasoningTokens", 0)) as "totalReasoningTokens",
+            SUM(cost) as "totalCost",
+            AVG(latency) as "averageLatency",
+            COUNT(*) as "requestCount"
         FROM token_usage
     `;
 
     const params: any[] = [];
+    let paramIndex = 1;
 
     if (startDate || endDate) {
         const conditions: string[] = [];
         if (startDate) {
-            conditions.push("createdAt >= ?");
+            conditions.push(`"createdAt" >= $${paramIndex}`);
             params.push(startDate);
+            paramIndex++;
         }
         if (endDate) {
-            conditions.push("createdAt <= ?");
+            conditions.push(`"createdAt" <= $${paramIndex}`);
             params.push(endDate);
+            paramIndex++;
         }
         query += " WHERE " + conditions.join(" AND ");
     }
 
     query += `
         GROUP BY model, provider
-        ORDER BY requestCount DESC
+        ORDER BY "requestCount" DESC
     `;
 
-    const results = db.prepare(query).all(...params) as Array<{
+    const result = await db.query(query, params);
+    const results = result.rows as Array<{
         model: string;
         provider: string;
-        totalPromptTokens: number;
-        totalCompletionTokens: number;
-        totalTokens: number;
-        totalCachedTokens: number;
-        totalReasoningTokens: number;
-        totalCost: number;
-        averageLatency: number | null;
-        requestCount: number;
+        totalPromptTokens: string;
+        totalCompletionTokens: string;
+        totalTokens: string;
+        totalCachedTokens: string;
+        totalReasoningTokens: string;
+        totalCost: string;
+        averageLatency: string | null;
+        requestCount: string;
     }>;
 
     return results.map((r) => {
-        const requestCount = r.requestCount || 0;
+        const requestCount = parseInt(r.requestCount) || 0;
         return {
             model: r.model,
             provider: r.provider,
-            totalPromptTokens: r.totalPromptTokens || 0,
-            totalCompletionTokens: r.totalCompletionTokens || 0,
-            totalTokens: r.totalTokens || 0,
-            totalCachedTokens: r.totalCachedTokens || 0,
-            totalReasoningTokens: r.totalReasoningTokens || 0,
-            totalCost: r.totalCost || 0,
-            averageLatency: r.averageLatency ? Math.round(r.averageLatency) : undefined,
+            totalPromptTokens: parseInt(r.totalPromptTokens) || 0,
+            totalCompletionTokens: parseInt(r.totalCompletionTokens) || 0,
+            totalTokens: parseInt(r.totalTokens) || 0,
+            totalCachedTokens: parseInt(r.totalCachedTokens) || 0,
+            totalReasoningTokens: parseInt(r.totalReasoningTokens) || 0,
+            totalCost: parseFloat(r.totalCost) || 0,
+            averageLatency: r.averageLatency ? Math.round(parseFloat(r.averageLatency)) : undefined,
             requestCount,
             usageFrequency: requestCount,
-            averageTokensPerRequest: requestCount > 0 ? (r.totalTokens || 0) / requestCount : 0,
-            averageCostPerRequest: requestCount > 0 ? (r.totalCost || 0) / requestCount : 0,
+            averageTokensPerRequest: requestCount > 0 ? (parseInt(r.totalTokens) || 0) / requestCount : 0,
+            averageCostPerRequest: requestCount > 0 ? (parseFloat(r.totalCost) || 0) / requestCount : 0,
         };
     });
 }

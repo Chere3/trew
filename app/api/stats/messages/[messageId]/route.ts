@@ -20,15 +20,14 @@ export async function GET(
     const userId = session.user.id;
 
     try {
-        // Verify message ownership through chat
-        const message = db
-            .prepare(`
-                SELECT m.id, m.chatId, c.userId 
+        // Optimized: Use efficient JOIN with indexed columns for ownership verification
+        const messageResult = await db.query(`
+                SELECT m.id, m."chatId", c."userId" 
                 FROM message m
-                JOIN chat c ON m.chatId = c.id
-                WHERE m.id = ?
-            `)
-            .get(messageId) as { id: string; chatId: string; userId: string } | undefined;
+                INNER JOIN chat c ON m."chatId" = c.id
+                WHERE m.id = $1
+            `, [messageId]);
+        const message = messageResult.rows[0] as { id: string; chatId: string; userId: string } | undefined;
 
         if (!message) {
             return NextResponse.json({ error: "Message not found" }, { status: 404 });
@@ -38,7 +37,7 @@ export async function GET(
             return NextResponse.json({ error: "Forbidden" }, { status: 403 });
         }
 
-        const stats = getMessageStats(messageId);
+        const stats = await getMessageStats(messageId);
 
         if (!stats) {
             return NextResponse.json(

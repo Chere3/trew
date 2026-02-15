@@ -22,6 +22,7 @@ import {
 } from "@/lib/prompts/semantic-memory";
 import { DEFAULT_MEMORY_SCORE_THRESHOLD } from "@/lib/constants";
 import { ROLLING_SUMMARY_KEEP_RECENT, ROLLING_SUMMARY_MIN_MESSAGES } from "@/lib/constants";
+import { invalidateChat, invalidateChatSummary } from "@/lib/cache/strategies";
 
 // Cache for models to reduce latency (5 minute TTL)
 let modelsCache: { models: any[], timestamp: number } | null = null;
@@ -61,35 +62,50 @@ export async function POST(
     }
 
     const userId = session.user.id;
-    const { model } = await req.json();
+    const body = await req.json();
+    const { model, pendingUserMessage } = body as {
+        model?: string;
+        pendingUserMessage?: { content?: string; attachments?: Array<{ type?: string; url?: string; name?: string }> };
+    };
 
-    // Verify chat ownership
-    const chat = db
-        .prepare("SELECT id FROM chat WHERE id = ? AND userId = ?")
-        .get(chatId, userId);
+    // Verify chat ownership.
+    // With cache-first chat creation, a freshly created chat may take a brief moment
+    // to appear in DB; retry a few times to avoid transient 404s on first generate.
+    let chat: { id: string } | undefined;
+    for (let attempt = 0; attempt < 4; attempt++) {
+        const chatResult = await db.query(
+            'SELECT id FROM chat WHERE id = $1 AND "userId" = $2',
+            [chatId, userId]
+        );
+        chat = chatResult.rows[0] as { id: string } | undefined;
+        if (chat) break;
+        if (attempt < 3) {
+            await new Promise((r) => setTimeout(r, 300));
+        }
+    }
 
     if (!chat) {
         return NextResponse.json({ error: "Chat not found" }, { status: 404 });
     }
 
     // Get messages with rolling summary applied
-    const { summary, recentMessages } = getMessagesWithSummary(chatId, ROLLING_SUMMARY_KEEP_RECENT);
+    const { summary, recentMessages } = await getMessagesWithSummary(chatId, ROLLING_SUMMARY_KEEP_RECENT);
     
     // Load user's semantic memory for system prompt injection
-    const userFacts = getUserSemanticMemory(userId);
+    const userFacts = await getUserSemanticMemory(userId);
     
     // Log for debugging
     if (userFacts && Object.keys(userFacts).length > 0) {
         console.log(`[Semantic Memory] Loaded ${Object.keys(userFacts).length} facts for user ${userId}`);
     }
     
-    // For auto-routing, we need all messages to find the last user message
-    // But we'll use recentMessages for the actual API call
-    const allMessagesForRouting = db
-        .prepare(
-            "SELECT role, content, attachments FROM message WHERE chatId = ? ORDER BY createdAt ASC"
-        )
-        .all(chatId) as { role: string; content: string; attachments: string | null }[];
+    // For auto-routing, we need the last user message only (optimized: LIMIT 1 with DESC order)
+    // This avoids fetching all messages when we only need the most recent user message
+    const lastUserMessageResult = await db.query(
+        'SELECT role, content, attachments FROM message WHERE "chatId" = $1 AND role = $2 ORDER BY "createdAt" DESC LIMIT 1',
+        [chatId, 'user']
+    );
+    const lastUserMessage = lastUserMessageResult.rows[0] as { role: string; content: string; attachments: string | null } | undefined;
 
     const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
     const FIREWORKS_API_KEY = process.env.FIREWORKS_API_KEY;
@@ -108,9 +124,8 @@ export async function POST(
 
     if (model === "auto" && FIREWORKS_API_KEY) {
         try {
-            // Get the last user message for classification
-            const lastUserMessage = [...allMessagesForRouting].reverse().find(m => m.role === "user");
-            const prompt = lastUserMessage?.content || "";
+            // Use the optimized last user message query result
+            const prompt = pendingUserMessage?.content?.trim() || lastUserMessage?.content || "";
 
             if (prompt) {
                 const models = await fetchModelsForAutoroute();
@@ -208,6 +223,35 @@ export async function POST(
                         });
                     }
                 });
+
+                // Low-latency path: if client already has a just-sent user message
+                // that may not be persisted yet, append it so the model sees latest input.
+                if (pendingUserMessage?.content?.trim()) {
+                    const lastMsg = apiMessages[apiMessages.length - 1];
+                    const pendingText = pendingUserMessage.content.trim();
+                    const isDuplicateLastUser =
+                        lastMsg?.role === "user" &&
+                        typeof lastMsg.content === "string" &&
+                        lastMsg.content.trim() === pendingText;
+
+                    if (!isDuplicateLastUser) {
+                        const pendingAttachments = pendingUserMessage.attachments || [];
+                        if (pendingAttachments.length > 0) {
+                            const pendingContent: any[] = [{ type: "text", text: pendingText }];
+                            pendingAttachments.forEach((attachment) => {
+                                if (attachment?.type?.startsWith("image/") && attachment.url) {
+                                    pendingContent.push({
+                                        type: "image_url",
+                                        image_url: { url: attachment.url },
+                                    });
+                                }
+                            });
+                            apiMessages.push({ role: "user", content: pendingContent });
+                        } else {
+                            apiMessages.push({ role: "user", content: pendingText });
+                        }
+                    }
+                }
                 
                 const requestBody = {
                     model: selectedModel,
@@ -323,23 +367,33 @@ export async function POST(
                 const latency = usageData?.latency || (now - startTime);
 
                 try {
-                    db.prepare(
-                        "INSERT INTO message (id, chatId, role, content, model, createdAt) VALUES (?, ?, ?, ?, ?, ?)"
-                    ).run(messageId, chatId, "assistant", assistantMessageContent, selectedModel, now);
-
-                    // Update chat timestamp
-                    db.prepare("UPDATE chat SET updatedAt = ? WHERE id = ?").run(
-                        now,
-                        chatId
+                    await db.query(
+                        'INSERT INTO message (id, "chatId", role, content, model, "createdAt") VALUES ($1, $2, $3, $4, $5, $6)',
+                        [messageId, chatId, "assistant", assistantMessageContent, selectedModel, now]
                     );
 
+                    // Update chat timestamp
+                    await db.query(
+                        'UPDATE chat SET "updatedAt" = $1 WHERE id = $2',
+                        [now, chatId]
+                    );
+
+                    // Invalidate chat cache (new message added)
+                    invalidateChat(chatId).catch((error) => {
+                        console.error("Failed to invalidate chat cache:", error);
+                    });
+
                     // Extract and save semantic memory facts (async, non-blocking)
-                    // Get recent user messages for fact extraction
-                    const recentUserMessages = db
-                        .prepare(
-                            "SELECT role, content, attachments, createdAt FROM message WHERE chatId = ? AND role = ? ORDER BY createdAt DESC LIMIT 10"
-                        )
-                        .all(chatId, "user") as Array<{ role: string; content: string; attachments: string | null; createdAt: number }>;
+                    // Optimized: Use index on (chatId, role, createdAt) for efficient query
+                    const recentUserMessagesResult = await db.query(
+                        'SELECT role, content, attachments, "createdAt" FROM message WHERE "chatId" = $1 AND role = $2 ORDER BY "createdAt" DESC LIMIT 10',
+                        [chatId, "user"]
+                    );
+                    // Convert createdAt from string (PostgreSQL bigint) to number
+                    const recentUserMessages = recentUserMessagesResult.rows.map((msg: any) => ({
+                        ...msg,
+                        createdAt: typeof msg.createdAt === 'string' ? parseInt(msg.createdAt, 10) : (msg.createdAt || Date.now()),
+                    })) as Array<{ role: string; content: string; attachments: string | null; createdAt: number }>;
                     
                     if (recentUserMessages.length > 0) {
                         // Reverse to get chronological order
@@ -352,7 +406,7 @@ export async function POST(
                         
                         // Extract facts asynchronously
                         extractFacts(messagesForExtraction, userFacts)
-                            .then(({ facts, scores }) => {
+                            .then(async ({ facts, scores }) => {
                                 // Filter facts by score threshold
                                 const factsToSave: Record<string, any> = {};
                                 const scoresToSave: Record<string, number> = {};
@@ -372,7 +426,7 @@ export async function POST(
                                     const merged = mergeFacts(existingFacts, factsToSave, scoresToSave);
                                     
                                     // Update database
-                                    updateUserSemanticMemory(userId, merged.facts);
+                                    await updateUserSemanticMemory(userId, merged.facts);
                                     
                                     console.log(`[Semantic Memory] Saved ${Object.keys(factsToSave).length} facts for user ${userId}`, factsToSave);
                                 }
@@ -384,27 +438,34 @@ export async function POST(
                     }
 
                     // Update rolling summary if needed (after assistant response is saved)
-                    // Check total message count to see if we need to update summary
-                    const totalMessageCount = db
-                        .prepare("SELECT COUNT(*) as count FROM message WHERE chatId = ?")
-                        .get(chatId) as { count: number };
+                    // Optimized: Check message count efficiently using LIMIT instead of COUNT
+                    // This avoids a full table scan when we only need to know if threshold is met
+                    const messageCountCheckResult = await db.query(
+                        'SELECT id FROM message WHERE "chatId" = $1 ORDER BY "createdAt" DESC LIMIT $2',
+                        [chatId, ROLLING_SUMMARY_MIN_MESSAGES]
+                    );
+                    const hasEnoughMessages = messageCountCheckResult.rows.length >= ROLLING_SUMMARY_MIN_MESSAGES;
                     
-                    if (totalMessageCount.count >= ROLLING_SUMMARY_MIN_MESSAGES) {
+                    if (hasEnoughMessages) {
                         // Get older messages that should be summarized
-                        const olderMessages = getOlderMessages(chatId, ROLLING_SUMMARY_KEEP_RECENT);
+                        const olderMessages = await getOlderMessages(chatId, ROLLING_SUMMARY_KEEP_RECENT);
                         
                         if (olderMessages.length > 0) {
                             // Get current summary
-                            const currentChat = db
-                                .prepare("SELECT summary FROM chat WHERE id = ?")
-                                .get(chatId) as { summary: string | null } | undefined;
+                            const currentChatResult = await db.query(
+                                'SELECT summary FROM chat WHERE id = $1',
+                                [chatId]
+                            );
+                            const currentChat = currentChatResult.rows[0] as { summary: string | null } | undefined;
                             
                             const currentSummary = currentChat?.summary || null;
                             
                             // Generate or update summary asynchronously (don't block the response)
                             generateSummary(olderMessages, currentSummary)
-                                .then((newSummary) => {
-                                    updateSummary(chatId, newSummary);
+                                .then(async (newSummary) => {
+                                    await updateSummary(chatId, newSummary);
+                                    // Invalidate summary cache
+                                    await invalidateChatSummary(chatId);
                                     console.log(`[Rolling Summary] Updated summary for chat ${chatId}`);
                                 })
                                 .catch((error) => {

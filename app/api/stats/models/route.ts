@@ -48,7 +48,7 @@ export async function GET(req: Request) {
 
         if (modelId) {
             // Get stats for a specific model
-            const stats = getModelStats(modelId, startDate, endDate);
+            const stats = await getModelStats(modelId, startDate, endDate);
 
             if (!stats) {
                 return NextResponse.json(
@@ -64,7 +64,7 @@ export async function GET(req: Request) {
             });
         } else {
             // Get stats for all models
-            const allModelsStats = getAllModelsStats(startDate, endDate);
+            const allModelsStats = await getAllModelsStats(startDate, endDate);
 
             return NextResponse.json({
                 period,
