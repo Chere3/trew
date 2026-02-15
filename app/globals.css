@@ -2,75 +2,77 @@
 
 @layer base {
   :root {
-    /* Modern YC SaaS palette - neutrals dominant, red for action */
-    --background: #FFFFFF; /* Off-white */
-    --foreground: #262626; /* Charcoal */
-    --card: #FCFCFC; /* Very light gray */
-    --card-foreground: #262626;
-    --popover: #FCFCFC;
-    --popover-foreground: #262626;
+    --background: #ffffff;
+    --foreground: #09090b; /* zinc-950 */
+    --card: #ffffff;
+    --card-foreground: #09090b;
+    --popover: #ffffff;
+    --popover-foreground: #09090b;
 
-    /* Primary: Blue scale - signals action and intelligence */
-    --primary: #1242EF; /* Bright, confident blue */
-    --primary-foreground: #FFFFFF; /* White text */
-    
-    
-    /* Secondary: Muted neutrals */
-    --secondary: #EBEBEB; /* Light gray */
-    --secondary-foreground: #333333;
-    --muted: #F0F0F0; /* Very soft gray */
-    --muted-foreground: #737373; /* Muted gray */
-    /* Accent: Soft blue for hover/focus states */
-    --accent: color-mix(in srgb, var(--primary) 10%, #FFFFFF); /* Very soft blue tint */
-    --accent-foreground: #1242EF; /* Primary blue for text on accent */
-    /* Destructive: Error red (distinct from primary action red) */
-    --destructive: #E94343; /* Vivid error red */
-    --destructive-foreground: #FAFAFA;
-    --border: #E0E0E0; /* Soft border */
-    --input: #EDEDED; /* Soft input background */
-    --ring: #1242EF; /* Primary blue for focus ring */
-    --radius: 0.75rem; /* Softer, modern border radius */
-    /* Chart colors with red-primary palette */
-    --chart-1: #DC3A3A; /* Primary red */
-    --chart-2: #D65757; /* Soft red */
-    --chart-3: #C78F8F; /* Muted red */
-    --chart-4: #5C7FA8; /* Soft blue */
-    --chart-5: #999999; /* Neutral gray */
-    /* Grid pattern for subtle background */
-    --grid-color: rgba(0, 0, 0, 0.03);
+    --primary: #18181b; /* zinc-900 */
+    --primary-foreground: #fafafa; /* zinc-50 */
+
+    --secondary: #f4f4f5; /* zinc-100 */
+    --secondary-foreground: #18181b;
+
+    --muted: #f4f4f5; /* zinc-100 */
+    --muted-foreground: #71717a; /* zinc-500 */
+
+    --accent: #f4f4f5; /* zinc-100 */
+    --accent-foreground: #18181b;
+
+    --destructive: #ef4444;
+    --destructive-foreground: #fafafa;
+
+    --border: #e4e4e7; /* zinc-200 */
+    --input: #e4e4e7;
+    --ring: #18181b;
+
+    --radius: 0.5rem;
+
+    --chart-1: #7c3aed; /* violet-600 */
+    --chart-2: #f97316; /* orange-500 */
+    --chart-3: #8b5cf6;
+    --chart-4: #22c55e;
+    --chart-5: #f59e0b;
+    --grid-color: rgba(0, 0, 0, 0.04);
   }
 
   .dark {
-    /* Dark mode - deeper tones, red remains primary */
-    --background: #141414; /* Near black */
-    --foreground: #EBEBEB; /* Light gray */
-    --card: #1A1A1A; /* Slightly lighter than background */
-    --card-foreground: #EBEBEB;
-    --popover: #1A1A1A;
-    --popover-foreground: #EBEBEB;
-    /* Primary: Brighter blue for contrast in dark mode */
-    --primary: #1242EF; /* Vibrant blue */
-    --primary-foreground: #FFFFFF; /* White text for contrast */
-    /* Secondary: Deep neutrals */
-    --secondary: #2E2E2E; /* Deep gray */
-    --secondary-foreground: #EBEBEB;
-    --muted: #262626; /* Deep muted gray */
-    --muted-foreground: #A6A6A6; /* Muted gray */
-    --accent: color-mix(in srgb, var(--primary) 15%, #1A1A1A); /* Dark blue tint */
-    --accent-foreground: #FFFFFF;
-    --destructive: #EB5A5A; /* Vivid error red for dark mode */
-    --destructive-foreground: #EBEBEB;
-    --border: #2E2E2E; /* Subtle border */
-    --input: #1F1F1F; /* Dark input */
-    --ring: #1242EF; /* Primary blue for focus */
-    /* Chart colors adjusted for dark mode */
-    --chart-1: #1242EF; /* Primary blue */
-    --chart-2: color-mix(in srgb, var(--primary) 90%, black);
-    --chart-3: color-mix(in srgb, var(--primary) 80%, black);
-    --chart-4: color-mix(in srgb, var(--primary) 70%, black);
-    --chart-5: color-mix(in srgb, var(--primary) 60%, black);
-    /* Grid pattern for subtle background - lighter for dark mode */
-    --grid-color: rgba(255, 255, 255, 0.05);
+    --background: #09090b; /* zinc-950 */
+    --foreground: #fafafa; /* zinc-50 */
+
+    --card: #09090b;
+    --card-foreground: #fafafa;
+
+    --popover: #09090b;
+    --popover-foreground: #fafafa;
+
+    --primary: #fafafa;
+    --primary-foreground: #18181b;
+
+    --secondary: #27272a; /* zinc-800 */
+    --secondary-foreground: #fafafa;
+
+    --muted: #27272a;
+    --muted-foreground: #a1a1aa; /* zinc-400 */
+
+    --accent: #27272a;
+    --accent-foreground: #fafafa;
+
+    --destructive: #7f1d1d;
+    --destructive-foreground: #fafafa;
+
+    --border: #27272a; /* zinc-800 */
+    --input: #27272a;
+    --ring: #d4d4d8; /* zinc-300 */
+
+    --chart-1: #a78bfa; /* violet-400 */
+    --chart-2: #fb923c; /* orange-400 */
+    --chart-3: #a78bfa;
+    --chart-4: #4ade80;
+    --chart-5: #fbbf24;
+    --grid-color: rgba(255, 255, 255, 0.04);
   }
 }
 
@@ -100,23 +102,32 @@
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
   --font-sans: var(--font-inter), 'Inter', system-ui, -apple-system, sans-serif;
-  --font-mono: ui-monospace, 'SF Mono', Monaco, 'Cascadia Code', monospace;
+  --font-mono: var(--font-jetbrains-mono), 'JetBrains Mono', 'Fira Code', ui-monospace, 'SF Mono', monospace;
   --font-caveat: var(--font-caveat), 'Caveat', cursive;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-inter), 'Inter', system-ui, -apple-system, sans-serif;
-  letter-spacing: -0.01em;
+  font-family: var(--font-sans);
+  letter-spacing: -0.015em; /* Slightly tighter for modern feel */
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  border-color: var(--border);
+}
+
+::selection {
+  background: var(--muted-foreground); /* Neutral selection */
+  color: var(--background);
 }
 
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(4px); /* Reduced movement */
   }
   to {
     opacity: 1;
@@ -125,79 +136,28 @@ body {
 }
 
 .animate-fade-in {
-  animation: fadeIn 0.3s ease-out forwards;
+  animation: fadeIn 0.2s ease-out forwards; /* Faster */
 }
 
-@keyframes slideOutUp {
-  from {
-    opacity: 1;
-    transform: translateY(0);
-  }
-  to {
-    opacity: 0;
-    transform: translateY(-100%);
-  }
+/* Scrollbar refinement */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--muted-foreground);
 }
 
-@keyframes slideInDown {
-  from {
-    opacity: 0;
-    transform: translateY(100%);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.animate-slide-out-up {
-  animation: slideOutUp 0.3s ease-out forwards;
-}
-
-.animate-slide-in-down {
-  animation: slideInDown 0.3s ease-out forwards;
-}
-
-.scrollbar-hide {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-
-.scrollbar-hide::-webkit-scrollbar {
-  display: none;
-}
-
-@keyframes scroll-horizontal {
-  from {
-    transform: translateX(0);
-  }
-  to {
-    transform: translateX(-50%);
-  }
-}
-
-.animate-scroll-horizontal {
-  animation: scroll-horizontal 15s linear infinite;
-}
-
-@keyframes spin-slow {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.animate-spin-slow {
-  animation: spin-slow 20s linear infinite;
-}
-
-/* Trust indicator logos - ensure visibility in both light and dark modes */
-.trust-indicator-logo {
-  filter: brightness(0) saturate(100%);
-}
-
-.dark .trust-indicator-logo {
-  filter: brightness(0) saturate(100%) invert(1) !important;
+/* Utilities */
+.glass {
+  background: color-mix(in srgb, var(--background) 80%, transparent);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }

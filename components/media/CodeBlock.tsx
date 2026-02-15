@@ -71,7 +71,7 @@ export function CodeBlock({
     // Function calls
     highlighted = highlighted.replace(
       /\b(\w+)(?=\()/g,
-      '<span class="text-blue-400">$1</span>'
+      '<span class="text-violet-400">$1</span>'
     )
 
     // Numbers

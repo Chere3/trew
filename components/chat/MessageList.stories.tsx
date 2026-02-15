@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react'
 import { useState, useCallback } from 'react'
 import { MessageList, type Message } from './MessageList'
+import { MessageListSkeleton } from './MessageListSkeleton'
 
 const meta = {
   title: 'Chat/MessageList',
@@ -245,3 +246,7 @@ export const WithStreaming: Story = {
     messages: [],
   },
 }
+
+export const Skeleton = {
+  render: () => <MessageListSkeleton messageCount={4} className="h-[600px]" />,
+} satisfies StoryObj<typeof MessageListSkeleton>

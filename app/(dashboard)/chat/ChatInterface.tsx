@@ -1,10 +1,12 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import useSWR, { mutate } from "swr";
-import { MessageList, MessageBubble } from "@/components/chat";
+import { MessageList } from "@/components/chat";
 import { MessageComposer } from "@/components/input/MessageComposer";
 import { ModelSelector, AVAILABLE_MODELS, type Model } from "@/components/input/ModelSelector";
+import { ModelSelectorSkeleton } from "@/components/input/ModelSelectorSkeleton";
+import { ConversationListSkeleton } from "@/components/chat/ConversationListSkeleton";
 import { cn } from "@/lib/utils";
 import { NewChatPage } from "@/components/chat/NewChatPage";
 import {
@@ -24,6 +26,8 @@ import { signOut } from "@/lib/auth-client";
 import { useRouter, useParams } from "next/navigation";
 import type { Message, Chat } from "@/lib/types";
 import { AUTO_MODEL_ID, API_ENDPOINTS, MESSAGE_ROLE_USER, MESSAGE_ROLE_ASSISTANT } from "@/lib/constants";
+import { Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface ChatData {
   messages: Message[];
@@ -54,7 +58,7 @@ export function ChatInterface() {
   const [tempMessages, setTempMessages] = useState<Message[]>([]); // For optimistic/streaming messages
 
   // Fetch initial messages for selected chat (most recent batch)
-  const { data: initialChatData, mutate: mutateInitialMessages } = useSWR<ChatData>(
+  const { data: initialChatData, isLoading: isLoadingMessages, mutate: mutateInitialMessages } = useSWR<ChatData>(
     conversationId ? `/api/chats/${conversationId}?limit=50` : null,
     fetcher
   );
@@ -70,83 +74,99 @@ export function ChatInterface() {
 
   // Initialize messages when chat changes or initial data loads
   useEffect(() => {
-    if (conversationId && initialChatData) {
-      const msgs = initialChatData.messages || [];
-      
-      if (conversationId !== lastInitializedChatId.current) {
-        // Chat changed: replace all messages
-        setLoadedMessages(msgs);
-        setHasMore(initialChatData.hasMore || false);
-        setOldestCursor(initialChatData.nextCursor || null);
-        // Preserve streaming messages when initializing a new chat
-        // This prevents clearing the typing indicator/streaming message on first message
-        setTempMessages((prev) => {
-          // Keep only streaming messages (assistant messages with isStreaming=true)
-          const streamingMessages = prev.filter(m => m.isStreaming && m.role === MESSAGE_ROLE_ASSISTANT);
-          return streamingMessages;
-        });
-        lastInitializedChatId.current = conversationId;
-      } else {
-        // Same chat: update loadedMessages with new messages from initialChatData
-        // This handles the case where mutateInitialMessages() updates initialChatData
-        // after a new message is saved to the DB
-        setLoadedMessages((prev) => {
-          if (msgs.length === 0) return prev;
-          
-          // Check if initialChatData has newer messages
-          const prevNewestId = prev.length > 0 ? prev[prev.length - 1]?.id : null;
-          const newNewestId = msgs[msgs.length - 1]?.id;
-          
-          if (prevNewestId && newNewestId && prevNewestId !== newNewestId) {
-            // New messages detected: replace with initialChatData
-            // initialChatData contains the most recent messages, so we use it
-            // This may lose older paginated messages, but they can be reloaded by scrolling
-            // Remove messages from tempMessages that are now in loadedMessages
-            // This prevents duplicates when messages move from temp to loaded
-            setTempMessages((prev) => {
-              const loadedMessageIds = new Set(msgs.map(m => m.id));
-              const filtered = prev.filter(m => {
-                // Keep streaming messages (they're not in loadedMessages yet)
-                if (m.isStreaming && m.role === MESSAGE_ROLE_ASSISTANT) return true;
-                // Remove messages that are now in loadedMessages
-                return !loadedMessageIds.has(m.id);
-              });
-              return filtered;
-            });
-            return msgs;
-          } else if (prev.length === 0) {
-            // No previous messages: use new messages
-            // Remove messages from tempMessages that are now in loadedMessages
-            setTempMessages((prev) => {
-              const loadedMessageIds = new Set(msgs.map(m => m.id));
-              const filtered = prev.filter(m => {
-                if (m.isStreaming && m.role === MESSAGE_ROLE_ASSISTANT) return true;
-                return !loadedMessageIds.has(m.id);
-              });
-              return filtered;
-            });
-            return msgs;
-          } else {
-            // Messages are the same: keep prev to preserve any paginated older messages
-            return prev;
-          }
-        });
-        setHasMore(initialChatData.hasMore || false);
-        setOldestCursor(initialChatData.nextCursor || null);
-      }
-    } else if (!conversationId) {
+    if (!conversationId) {
       setLoadedMessages([]);
       setHasMore(false);
       setOldestCursor(null);
       setTempMessages([]);
       lastInitializedChatId.current = undefined;
+      return;
     }
-  }, [initialChatData, conversationId]);
 
-  // Combine loaded messages with temp messages (optimistic/streaming)
+    if (!initialChatData) {
+      return;
+    }
+
+    if (conversationId && initialChatData) {
+      const msgs = initialChatData.messages || [];
+      
+      if (conversationId !== lastInitializedChatId.current) {
+        setLoadedMessages(msgs);
+        setHasMore(initialChatData.hasMore || false);
+        setOldestCursor(initialChatData.nextCursor || null);
+        setTempMessages((prev) => {
+          // Keep optimistic messages only until their persisted equivalents appear.
+          const loadedMessageIds = new Set(msgs.map((m) => m.id));
+          const loadedAssistantContents = new Set(
+            msgs
+              .filter((m) => m.role === MESSAGE_ROLE_ASSISTANT && typeof m.content === "string")
+              .map((m) => m.content.trim())
+              .filter(Boolean)
+          );
+
+          return prev.filter((m) => {
+            if (m.isStreaming && m.role === MESSAGE_ROLE_ASSISTANT) return true;
+            if (loadedMessageIds.has(m.id)) return false;
+            // Assistant temp ids never match DB ids; de-dup by content once stream is persisted.
+            if (
+              m.role === MESSAGE_ROLE_ASSISTANT &&
+              !m.isStreaming &&
+              typeof m.content === "string" &&
+              loadedAssistantContents.has(m.content.trim())
+            ) {
+              return false;
+            }
+            return true;
+          });
+        });
+        lastInitializedChatId.current = conversationId;
+      } else {
+        setLoadedMessages((prev) => {
+          if (msgs.length === 0) return prev;
+
+          // Merge instead of replace to avoid UI "blink/disappear" when SWR returns
+          // a stale/shorter snapshot right after optimistic updates.
+          const byId = new Map<string, any>();
+          [...prev, ...msgs].forEach((m) => byId.set(m.id, m));
+          const merged = Array.from(byId.values()).sort((a, b) => a.createdAt - b.createdAt);
+
+          // Never shrink loaded messages during active conversation refreshes.
+          const nextLoaded = merged.length >= prev.length ? merged : prev;
+
+          setTempMessages((tempPrev) => {
+            const loadedMessageIds = new Set(nextLoaded.map((m: any) => m.id));
+            const loadedAssistantContents = new Set(
+              nextLoaded
+                .filter((m: any) => m.role === MESSAGE_ROLE_ASSISTANT && typeof m.content === "string")
+                .map((m: any) => m.content.trim())
+                .filter(Boolean)
+            );
+
+            return tempPrev.filter((m) => {
+              if (m.isStreaming && m.role === MESSAGE_ROLE_ASSISTANT) return true;
+              if (loadedMessageIds.has(m.id)) return false;
+              if (
+                m.role === MESSAGE_ROLE_ASSISTANT &&
+                !m.isStreaming &&
+                typeof m.content === "string" &&
+                loadedAssistantContents.has(m.content.trim())
+              ) {
+                return false;
+              }
+              return true;
+            });
+          });
+
+          return nextLoaded;
+        });
+        setHasMore(initialChatData.hasMore || false);
+        setOldestCursor(initialChatData.nextCursor || null);
+      }
+    }
+  }, [conversationId, initialChatData]);
+
   const messages = [...loadedMessages, ...tempMessages];
 
-  // Load older messages when scrolling near top
   const loadOlderMessages = useCallback(async () => {
     if (!conversationId || !oldestCursor || isLoadingOlderRef.current || !hasMore) {
       return;
@@ -165,7 +185,6 @@ export function ChatInterface() {
       const newMessages = data.messages || [];
 
       if (newMessages.length > 0) {
-        // Prepend older messages to the beginning
         setLoadedMessages((prev) => [...newMessages, ...prev]);
         setHasMore(data.hasMore || false);
         setOldestCursor(data.nextCursor || null);
@@ -180,14 +199,12 @@ export function ChatInterface() {
     }
   }, [conversationId, oldestCursor, hasMore]);
 
-  // Scroll detection for loading older messages
   useEffect(() => {
     const container = messagesContainerRef.current;
     if (!container) return;
 
     const handleScroll = () => {
       const scrollTop = container.scrollTop;
-      // Load more when within 200px of top
       if (scrollTop < 200 && hasMore && !isLoadingOlderRef.current) {
         loadOlderMessages();
       }
@@ -197,44 +214,6 @@ export function ChatInterface() {
     return () => container.removeEventListener("scroll", handleScroll);
   }, [loadOlderMessages, hasMore]);
 
-  // Auto-scroll user message to top when sent
-  // Note: This is now fully handled in MessageList component, so we disable this fallback
-  // to avoid conflicts with MessageList's scroll calculations
-  // useEffect(() => {
-  //   if (!messages.length) return;
-
-  //   const lastMsg = messages[messages.length - 1];
-
-  //   // Check if it's a user message and new
-  //   if (lastMsg.role === MESSAGE_ROLE_USER && lastMsg.id !== lastUserMessageIdRef.current) {
-  //     lastUserMessageIdRef.current = lastMsg.id;
-
-  //     // Use requestAnimationFrame to ensure virtualizer has rendered
-  //     requestAnimationFrame(() => {
-  //       requestAnimationFrame(() => {
-  //         requestAnimationFrame(() => {
-  //           const container = messagesContainerRef.current;
-  //           const element = document.getElementById(`message-${lastMsg.id}`);
-  //           if (container && element) {
-  //             // Calculate the position to scroll: user message at top of visible area
-  //             const containerRect = container.getBoundingClientRect();
-  //             const elementRect = element.getBoundingClientRect();
-  //             const relativeTop = elementRect.top - containerRect.top + container.scrollTop;
-              
-  //             // Scroll so the user message is at the top of the container
-  //             // This reserves space below for the assistant message
-  //             container.scrollTo({
-  //               top: relativeTop,
-  //               behavior: 'smooth'
-  //             });
-  //           }
-  //         });
-  //       });
-  //     });
-  //   }
-  // }, [messages]);
-
-  // Set selected model from last assistant message only when switching chats
   useEffect(() => {
     if (conversationId && initialChatData && conversationId !== lastInitializedChatId.current) {
       const msgs = initialChatData.messages || [];
@@ -247,7 +226,6 @@ export function ChatInterface() {
     }
   }, [initialChatData, conversationId]);
 
-  // Helper function to convert File to base64 data URL
   const fileToBase64 = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -260,7 +238,6 @@ export function ChatInterface() {
   const handleSend = async (content: string, files: File[]) => {
     if (!content.trim() && files.length === 0) return;
 
-    // Convert files to base64 for storage
     const attachments = await Promise.all(
       files.map(async (file) => ({
         name: file.name,
@@ -271,7 +248,77 @@ export function ChatInterface() {
 
     const now = Date.now();
 
-    // Optimistic update for message list
+    if (!conversationId) {
+      const optimisticChatId = `chat-${now}-${Math.random().toString(36).substr(2, 9)}`;
+      const optimisticTitle = content.substring(0, 50);
+
+      mutate(API_ENDPOINTS.CHATS, (currentChats: Chat[] | undefined) => {
+        const newChat: Chat = {
+          id: optimisticChatId,
+          title: optimisticTitle,
+          createdAt: now,
+          updatedAt: now,
+          preview: content,
+        };
+        return currentChats ? [newChat, ...currentChats] : [newChat];
+      }, { revalidate: false });
+
+      const tempId = `temp-${now}`;
+      const userMessage: Message = {
+        id: tempId,
+        role: "user",
+        content: content.trim(),
+        createdAt: now,
+        attachments
+      };
+      setTempMessages([userMessage]);
+
+      router.push(`/chat/${optimisticChatId}`);
+
+      fetch(API_ENDPOINTS.CHATS, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: content,
+          attachments
+        }),
+      })
+        .then(async (res) => {
+          if (res.ok) {
+            const newChat = await res.json();
+            mutate(API_ENDPOINTS.CHATS, (currentChats: Chat[] | undefined) => {
+              if (!currentChats) return currentChats;
+              return currentChats.map(chat => 
+                chat.id === optimisticChatId 
+                  ? { ...chat, id: newChat.id, title: newChat.title }
+                  : chat
+              );
+            }, { revalidate: false });
+
+            // We just navigated to the optimistic route above, so always swap to the real chat id.
+            router.replace(`/chat/${newChat.id}`);
+
+            handleAIResponse(newChat.id);
+          } else {
+            mutate(API_ENDPOINTS.CHATS, (currentChats: Chat[] | undefined) => {
+              return currentChats?.filter(c => c.id !== optimisticChatId) || [];
+            }, { revalidate: false });
+            setTempMessages([]);
+            console.error("Failed to create chat");
+          }
+        })
+        .catch((error) => {
+          console.error("Failed to create chat", error);
+          mutate(API_ENDPOINTS.CHATS, (currentChats: Chat[] | undefined) => {
+            return currentChats?.filter(c => c.id !== optimisticChatId) || [];
+          }, { revalidate: false });
+          setTempMessages([]);
+        });
+
+      mutate(API_ENDPOINTS.CHATS);
+      return;
+    }
+
     const tempId = `temp-${now}`;
     const userMessage: Message = {
       id: tempId,
@@ -280,80 +327,53 @@ export function ChatInterface() {
       createdAt: now,
       attachments
     };
-
-    // If no chat selected, create new chat
-    if (!conversationId) {
-      try {
-        const res = await fetch(API_ENDPOINTS.CHATS, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            message: content,
-            attachments
-          }),
-        });
-
-        if (res.ok) {
-          const newChat = await res.json();
-          await mutate("/api/chats"); // Refresh chat list
-          // Navigate to the new chat URL
-          router.push(`/chat/${newChat.id}`);
-          // SWR will automatically fetch the new chat data
-          // Trigger AI response after a short delay to allow data to load
-          setTimeout(() => handleAIResponse(newChat.id), 100);
-        }
-      } catch (error) {
-        console.error("Failed to create chat", error);
-      }
-      return;
-    }
-
-    // Existing chat: Optimistically update UI with temp message
     setTempMessages((prev) => [...prev, userMessage]);
 
-    try {
-      const res = await fetch(`/api/chats/${conversationId}/messages`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          role: "user",
-          content: content,
-          attachments
-        }),
-      });
+    mutate(API_ENDPOINTS.CHATS, (currentChats: Chat[] | undefined) => {
+      if (!currentChats) return currentChats;
+      return currentChats.map(chat => 
+        chat.id === conversationId 
+          ? { ...chat, updatedAt: now, preview: content.substring(0, 100) }
+          : chat
+      );
+    }, { revalidate: false });
 
-      if (res.ok) {
-        const savedMessage = await res.json();
-        // Replace temp message with saved message
-        setTempMessages((prev) => 
-          prev.map(m => m.id === tempId ? { ...savedMessage, isStreaming: false } : m)
-        );
-        // Refresh initial data to get updated messages
-        mutateInitialMessages();
-        mutate(API_ENDPOINTS.CHATS); // Update chat preview in sidebar
+    // Start generation immediately to reduce TTFB; backend will include this pending message.
+    handleAIResponse(conversationId, { content, attachments: files });
 
-        // Trigger AI response immediately
-        if (conversationId) {
-          handleAIResponse(conversationId);
+    fetch(`/api/chats/${conversationId}/messages`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        role: "user",
+        content: content,
+        attachments
+      }),
+    })
+      .then(async (res) => {
+        if (res.ok) {
+          const savedMessage = await res.json();
+          setTempMessages((prev) => 
+            prev.map(m => m.id === tempId ? { ...savedMessage, isStreaming: false } : m)
+          );
+          mutateInitialMessages();
+          mutate(API_ENDPOINTS.CHATS);
+        } else {
+          setTempMessages((prev) => prev.filter(m => m.id !== tempId));
+          mutate(API_ENDPOINTS.CHATS);
         }
-
-      } else {
-        // Rollback on error
+      })
+      .catch((error) => {
+        console.error("Failed to send message", error);
         setTempMessages((prev) => prev.filter(m => m.id !== tempId));
-      }
-    } catch (error) {
-      console.error("Failed to send message", error);
-      setTempMessages((prev) => prev.filter(m => m.id !== tempId));
-    }
+        mutate(API_ENDPOINTS.CHATS);
+      });
   };
 
-  const handleAIResponse = async (chatId: string) => {
-    // 1. Create a temporary ID for the AI response
+  const handleAIResponse = async (chatId: string, pendingUserMessage?: { content: string; attachments: File[] }) => {
     const tempId = `ai-${Date.now()}`;
 
     try {
-      // 2. Immediately add an empty "streaming" assistant message
-      // This triggers the TypingIndicator because content is empty and isStreaming is true
       const streamingMessage: Message = {
         id: tempId,
         role: MESSAGE_ROLE_ASSISTANT,
@@ -369,11 +389,63 @@ export function ChatInterface() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           model: selectedModel,
+          pendingUserMessage: pendingUserMessage ? {
+            content: pendingUserMessage.content,
+            attachments: pendingUserMessage.attachments,
+          } : undefined,
         }),
       });
 
       if (!response.ok || !response.body) {
-        throw new Error("Failed to generate response");
+        // New chats can hit a tiny race while cache-backed writes flush to DB.
+        // Retry once shortly after for 404/409 type transient states.
+        if ((response.status === 404 || response.status === 409) && !chatId.startsWith("chat-")) {
+          await new Promise((r) => setTimeout(r, 350));
+          const retry = await fetch(`/api/chats/${chatId}/generate`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              model: selectedModel,
+              pendingUserMessage: pendingUserMessage ? {
+                content: pendingUserMessage.content,
+                attachments: pendingUserMessage.attachments,
+              } : undefined,
+            }),
+          });
+          if (retry.ok && retry.body) {
+            const reader = retry.body.getReader();
+            const decoder = new TextDecoder();
+            let assistantMessageContent = "";
+
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) {
+                setTempMessages((prev) =>
+                  prev.map(m => m.id === tempId ? { ...m, isStreaming: false } : m)
+                );
+                break;
+              }
+
+              const chunk = decoder.decode(value, { stream: true });
+              assistantMessageContent += chunk;
+              setTempMessages((prev) =>
+                prev.map(m =>
+                  m.id === tempId
+                    ? { ...m, content: assistantMessageContent, isStreaming: true }
+                    : m
+                )
+              );
+            }
+
+            await mutateInitialMessages();
+            mutate("/api/chats");
+
+            return;
+          }
+        }
+
+        const errText = await response.text().catch(() => "");
+        throw new Error(`Failed to generate response (${response.status}) ${errText}`);
       }
 
       const reader = response.body.getReader();
@@ -384,7 +456,6 @@ export function ChatInterface() {
         const { done, value } = await reader.read();
 
         if (done) {
-          // Stream finished, mark isStreaming as false
           setTempMessages((prev) =>
             prev.map(m =>
               m.id === tempId ? { ...m, isStreaming: false } : m
@@ -396,7 +467,6 @@ export function ChatInterface() {
         const chunk = decoder.decode(value, { stream: true });
         assistantMessageContent += chunk;
 
-        // Update the streaming message
         setTempMessages((prev) =>
           prev.map(m =>
             m.id === tempId
@@ -406,18 +476,12 @@ export function ChatInterface() {
         );
       }
 
-      // Final revalidation to sync with DB
-      // Refresh initial data to get the saved message
       await mutateInitialMessages();
       mutate("/api/chats");
+      // Do not force-remove temp assistant here; keep it visible until server state catches up.
 
-      // Remove temp message after a short delay to allow DB sync
-      setTimeout(() => {
-        setTempMessages((prev) => prev.filter(m => m.id !== tempId));
-      }, 500);
     } catch (e) {
       console.error("AI response failed", e);
-      // Remove the temp message on error
       setTempMessages((prev) => prev.filter(m => m.id !== tempId));
     }
   };
@@ -426,26 +490,21 @@ export function ChatInterface() {
     if (!conversationId) return;
 
     try {
-      // Find message index in combined messages
       const messageIndex = messages.findIndex(m => m.id === messageId);
       if (messageIndex === -1) return;
 
-      // Separate loaded and temp messages
       const loadedCount = loadedMessages.length;
       const messageInLoaded = messageIndex < loadedCount;
 
       if (messageInLoaded) {
-        // Message is in loaded messages - keep up to this message
         const messagesToKeep = loadedMessages.slice(0, messageIndex + 1);
         setLoadedMessages(messagesToKeep);
         setTempMessages([]);
       } else {
-        // Message is in temp messages - remove all temp messages after this point
         const tempIndex = messageIndex - loadedCount;
         setTempMessages((prev) => prev.slice(0, tempIndex + 1));
       }
 
-      // Delete messages from database
       const res = await fetch(`/api/chats/${conversationId}/messages`, {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
@@ -456,17 +515,14 @@ export function ChatInterface() {
         throw new Error("Failed to delete messages");
       }
 
-      // Revalidate to sync with DB
       await mutateInitialMessages();
       mutate("/api/chats");
 
-      // Trigger new AI response
       if (conversationId) {
         handleAIResponse(conversationId);
       }
     } catch (error) {
       console.error("Failed to regenerate", error);
-      // Revalidate on error
       mutateInitialMessages();
     }
   };
@@ -475,12 +531,9 @@ export function ChatInterface() {
     if (!conversationId) return;
 
     try {
-      // Find the assistant message and the user message before it
       const assistantIndex = messages.findIndex(m => m.id === assistantMessageId);
       if (assistantIndex === -1) return;
 
-      // Find the user message that triggered this assistant response
-      // (the last user message before this assistant message)
       let userMessageIndex = -1;
       for (let i = assistantIndex - 1; i >= 0; i--) {
         if (messages[i].role === 'user') {
@@ -491,22 +544,18 @@ export function ChatInterface() {
 
       if (userMessageIndex === -1) return;
 
-      // Separate loaded and temp messages
       const loadedCount = loadedMessages.length;
       const userMessageInLoaded = userMessageIndex < loadedCount;
 
       if (userMessageInLoaded) {
-        // User message is in loaded messages - keep up to this message
         const messagesToKeep = loadedMessages.slice(0, userMessageIndex + 1);
         setLoadedMessages(messagesToKeep);
         setTempMessages([]);
       } else {
-        // User message is in temp messages - remove all temp messages after this point
         const tempIndex = userMessageIndex - loadedCount;
         setTempMessages((prev) => prev.slice(0, tempIndex + 1));
       }
 
-      // Delete the assistant message and any subsequent messages from database
       const res = await fetch(`/api/chats/${conversationId}/messages`, {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
@@ -517,34 +566,35 @@ export function ChatInterface() {
         throw new Error("Failed to delete messages");
       }
 
-      // Revalidate to sync with DB
       await mutateInitialMessages();
-      mutate("/api/chats");
+      // Do not force-remove temp assistant here; keep it visible until server state catches up.
+      mutate("/api/chats", async (currentChats: Chat[] | undefined) => {
+        if (!currentChats) return currentChats;
+        return currentChats.map(chat => 
+          chat.id === conversationId 
+            ? { ...chat, updatedAt: Date.now() }
+            : chat
+        );
+      }, { revalidate: false });
 
-      // Trigger new AI response with the selected model
       const previousModel = selectedModel;
       setSelectedModel(newModelId);
       
-      // Use handleAIResponse but with the new model
       if (conversationId) {
         await handleAIResponseWithModel(conversationId, newModelId);
       }
       
-      // Restore previous model selection
       setSelectedModel(previousModel);
     } catch (error) {
       console.error("Failed to regenerate assistant message", error);
-      // Revalidate on error
       mutateInitialMessages();
     }
   };
 
   const handleAIResponseWithModel = async (chatId: string, modelId: string) => {
-    // 1. Create a temporary ID for the AI response
     const tempId: string = `ai-${Date.now()}`;
 
     try {
-      // 2. Immediately add an empty "streaming" assistant message
       const streamingMessage: Message = {
         id: tempId,
         role: MESSAGE_ROLE_ASSISTANT,
@@ -564,7 +614,51 @@ export function ChatInterface() {
       });
 
       if (!response.ok || !response.body) {
-        throw new Error("Failed to generate response");
+        // New chats can hit a tiny race while cache-backed writes flush to DB.
+        // Retry once shortly after for 404/409 type transient states.
+        if ((response.status === 404 || response.status === 409) && !chatId.startsWith("chat-")) {
+          await new Promise((r) => setTimeout(r, 350));
+          const retry = await fetch(`/api/chats/${chatId}/generate`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              model: modelId,
+            }),
+          });
+          if (retry.ok && retry.body) {
+            const reader = retry.body.getReader();
+            const decoder = new TextDecoder();
+            let assistantMessageContent = "";
+
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) {
+                setTempMessages((prev) =>
+                  prev.map(m => m.id === tempId ? { ...m, isStreaming: false } : m)
+                );
+                break;
+              }
+
+              const chunk = decoder.decode(value, { stream: true });
+              assistantMessageContent += chunk;
+              setTempMessages((prev) =>
+                prev.map(m =>
+                  m.id === tempId
+                    ? { ...m, content: assistantMessageContent, isStreaming: true }
+                    : m
+                )
+              );
+            }
+
+            await mutateInitialMessages();
+            mutate("/api/chats");
+
+            return;
+          }
+        }
+
+        const errText = await response.text().catch(() => "");
+        throw new Error(`Failed to generate response (${response.status}) ${errText}`);
       }
 
       const reader = response.body.getReader();
@@ -575,7 +669,6 @@ export function ChatInterface() {
         const { done, value } = await reader.read();
 
         if (done) {
-          // Stream finished, mark isStreaming as false
           setTempMessages((prev) =>
             prev.map(m =>
               m.id === tempId ? { ...m, isStreaming: false } : m
@@ -587,7 +680,6 @@ export function ChatInterface() {
         const chunk = decoder.decode(value, { stream: true });
         assistantMessageContent += chunk;
 
-        // Update the streaming message
         setTempMessages((prev) =>
           prev.map(m =>
             m.id === tempId
@@ -597,18 +689,18 @@ export function ChatInterface() {
         );
       }
 
-      // Final revalidation to sync with DB
-      // Refresh initial data to get the saved message
       await mutateInitialMessages();
-      mutate("/api/chats");
+      mutate("/api/chats", async (currentChats: Chat[] | undefined) => {
+        if (!currentChats) return currentChats;
+        return currentChats.map(chat => 
+          chat.id === chatId 
+            ? { ...chat, updatedAt: Date.now() }
+            : chat
+        );
+      }, { revalidate: false });
 
-      // Remove temp message after a short delay to allow DB sync
-      setTimeout(() => {
-        setTempMessages((prev) => prev.filter(m => m.id !== tempId));
-      }, 500);
     } catch (e) {
       console.error("AI response failed", e);
-      // Remove the temp message on error
       setTempMessages((prev) => prev.filter(m => m.id !== tempId));
     }
   };
@@ -627,13 +719,14 @@ export function ChatInterface() {
     router.refresh();
   };
 
-  // Transform chats to Conversation interface
-  const conversations: Conversation[] = (chats || []).map(chat => ({
-    id: chat.id,
-    title: chat.title || "New Chat",
-    preview: chat.preview || "No messages yet",
-    timestamp: new Date(chat.updatedAt || 0),
-  }));
+  const conversations: Conversation[] = useMemo(() => {
+    return (chats || []).map(chat => ({
+      id: chat.id,
+      title: chat.title || "New Chat",
+      preview: chat.preview || "No messages yet",
+      timestamp: new Date(chat.updatedAt || 0),
+    }));
+  }, [chats]);
 
   const user = session?.user
     ? {
@@ -657,12 +750,10 @@ export function ChatInterface() {
 
 
   const handleArchive = async (chatId: string) => {
-    // Optimistic update
     mutate("/api/chats", (currentChats: Chat[] | undefined) => {
       return currentChats?.filter(c => c.id !== chatId) || [];
     }, { revalidate: false });
 
-    // API call
     try {
       await fetch(`/api/chats/${chatId}`, {
         method: "PATCH",
@@ -672,12 +763,11 @@ export function ChatInterface() {
       mutate("/api/chats");
     } catch (e) {
       console.error("Failed to archive chat", e);
-      mutate("/api/chats"); // Revalidate on error
+      mutate("/api/chats");
     }
   };
 
   const handleDelete = async (chatId: string) => {
-    // Optimistic update
     mutate("/api/chats", (currentChats: Chat[] | undefined) => {
       return currentChats?.filter(c => c.id !== chatId) || [];
     }, { revalidate: false });
@@ -686,7 +776,6 @@ export function ChatInterface() {
       router.push("/chat");
     }
 
-    // API call
     try {
       await fetch(`/api/chats/${chatId}`, {
         method: "DELETE",
@@ -694,15 +783,15 @@ export function ChatInterface() {
       mutate("/api/chats");
     } catch (e) {
       console.error("Failed to delete chat", e);
-      mutate("/api/chats"); // Revalidate on error
+      mutate("/api/chats");
     }
   };
 
   return (
-    <div className="flex h-screen bg-secondary/30 relative">
-      {/* Toggle button - shown when sidebar is collapsed */}
+    <div className="relative flex h-screen overflow-hidden bg-background font-sans">
+      {/* Sidebar Toggle (Mobile/Collapsed) */}
       {sidebarCollapsed && (
-        <div className="absolute left-2 top-2 z-50">
+        <div className="absolute left-4 top-4 z-50">
           <SidebarToggle
             collapsed={sidebarCollapsed}
             onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
@@ -710,39 +799,54 @@ export function ChatInterface() {
         </div>
       )}
       
-      {/* Sidebar */}
       <Sidebar
         collapsed={sidebarCollapsed}
         onCollapsedChange={setSidebarCollapsed}
-        className="h-full border-r-0 bg-transparent"
+        className="h-full border-r border-border/50 bg-secondary/10"
       >
-        <SidebarHeader>
-          {!sidebarCollapsed && (
-            <>
-              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex-1">
-                Conversations
-              </span>
-              <SidebarToggle
+        <SidebarHeader className="flex justify-between items-center px-4 pt-4 pb-2">
+           {!sidebarCollapsed && (
+             <div className="flex w-full items-center justify-between">
+                <Button 
+                    onClick={handleNewConversation}
+                    variant="outline" 
+                    className="w-full justify-start gap-2 border-dashed border-border hover:bg-muted/50"
+                >
+                    <Plus className="h-4 w-4" />
+                    <span className="text-sm font-medium">New Chat</span>
+                </Button>
+             </div>
+           )}
+           <SidebarToggle
                 collapsed={sidebarCollapsed}
                 onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
-              />
-            </>
-          )}
+                className={cn("ml-2", sidebarCollapsed && "hidden")}
+           />
         </SidebarHeader>
 
-        <SidebarContent>
+        <SidebarContent className="px-2 py-2">
           {!sidebarCollapsed ? (
-            <ConversationList
-              conversations={conversations}
-              selectedId={conversationId}
-              onSelect={handleSelectConversation}
-              onNew={handleNewConversation}
-              onArchive={handleArchive}
-              onDelete={handleDelete}
-            />
+            isLoadingChats || !chats ? (
+              <ConversationListSkeleton />
+            ) : (
+              <ConversationList
+                conversations={conversations}
+                selectedId={conversationId}
+                onSelect={handleSelectConversation}
+                onArchive={handleArchive}
+                onDelete={handleDelete}
+              />
+            )
           ) : (
-            <div className="flex flex-col items-center gap-2 p-2">
-              {/* Collapsed state: show icon-only items if needed */}
+            <div className="flex flex-col items-center gap-2 pt-4">
+               <Button
+                  onClick={handleNewConversation}
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 rounded-full"
+               >
+                 <Plus className="h-4 w-4" />
+               </Button>
             </div>
           )}
         </SidebarContent>
@@ -757,65 +861,80 @@ export function ChatInterface() {
         </SidebarFooter>
       </Sidebar>
 
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col min-w-0 my-2 mr-2 rounded-2xl bg-background shadow-sm border border-border/50 overflow-hidden">
-        {/* Model Selector */}
-        <ModelSelector
-          selectedModelId={selectedModel}
-          onModelChange={setSelectedModel}
-        />
+      <div className="flex min-w-0 flex-1 flex-col h-full relative">
+        {/* Top Header */}
+        <header className="flex h-14 items-center justify-between gap-4 px-6 border-b border-border/30 bg-background/50 backdrop-blur-sm sticky top-0 z-10">
+          <div className="flex items-center gap-2">
+             {!modelsData ? (
+                <ModelSelectorSkeleton />
+                ) : (
+                <ModelSelector
+                    selectedModelId={selectedModel}
+                    onModelChange={setSelectedModel}
+                />
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            {/* Right side header items (share, etc.) could go here */}
+          </div>
+        </header>
 
         {/* Messages */}
-        <div className="flex-1 min-h-0" ref={messagesContainerRef}>
-          {!conversationId && messages.length === 0 ? (
-            <NewChatPage
-              onModelSelect={setSelectedModel}
-              userName={user.name}
-            />
-          ) : (
-            <MessageList 
-              className="h-full"
-              messages={messages}
-              isLoadingOlder={isLoadingOlder}
-              hasMore={hasMore}
-              onScrollNearTop={loadOlderMessages}
-              availableModels={availableModels}
-              onRegenerate={handleRegenerate}
-              onRegenerateWithModel={handleRegenerateAssistant}
-              getProviderIcon={(message) => {
-                if (message.role === MESSAGE_ROLE_USER || !message.model) return undefined;
+        <div className="flex-1 overflow-y-auto min-h-0 scrollbar-hide" ref={messagesContainerRef}>
+          <div className="max-w-3xl mx-auto w-full h-full flex flex-col">
+              {!conversationId && messages.length === 0 ? (
+                <NewChatPage
+                  onModelSelect={setSelectedModel}
+                  userName={user.name}
+                />
+              ) : (
+                <MessageList 
+                  className="pb-44 pt-6" // Extra bottom padding so composer never overlaps message actions
+                  messages={messages}
+                  isLoadingOlder={isLoadingOlder}
+                  hasMore={hasMore}
+                  onScrollNearTop={loadOlderMessages}
+                  availableModels={availableModels}
+                  onRegenerate={handleRegenerate}
+                  onRegenerateWithModel={handleRegenerateAssistant}
+                  getProviderIcon={(message) => {
+                    if (message.role === MESSAGE_ROLE_USER || !message.model) return undefined;
 
-                const model = availableModels.find(m => m.id === message.model);
-                if (!model) return undefined;
+                    const model = availableModels.find(m => m.id === message.model);
+                    if (!model) return undefined;
 
-                const config = getProviderConfig(model.provider);
-                const Icon = config.icon;
+                    const config = getProviderConfig(model.provider);
+                    const Icon = config.icon;
 
-                if (config.logoUrl) {
-                  return (
-                    <Image
-                      src={config.logoUrl}
-                      alt={config.displayName}
-                      width={14}
-                      height={14}
-                      className="object-contain"
-                      unoptimized
-                    />
-                  );
-                }
+                    if (config.logoUrl) {
+                      return (
+                        <Image
+                          src={config.logoUrl}
+                          alt={config.displayName}
+                          width={14}
+                          height={14}
+                          className="object-contain"
+                          unoptimized
+                        />
+                      );
+                    }
 
-                return <Icon className={cn("h-4 w-4", config.color)} />;
-              }}
-            />
-          )}
+                    return <Icon className={cn("h-4 w-4", config.color)} />;
+                  }}
+                />
+              )}
+          </div>
         </div>
 
-        {/* Message Composer */}
-        <MessageComposer
-          onSend={handleSend}
-          placeholder="Type your message..."
-          autoFocus
-        />
+        {/* Message Composer - Fixed Bottom */}
+        <div className="absolute bottom-0 left-0 right-0 z-20">
+             <MessageComposer
+                onSend={handleSend}
+                placeholder="Ask anything..."
+                autoFocus
+                className="bg-transparent border-t-0 pb-6"
+             />
+        </div>
       </div>
 
       <SettingsDialog

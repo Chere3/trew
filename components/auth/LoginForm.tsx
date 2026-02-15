@@ -111,7 +111,7 @@ export function LoginForm() {
       </div>
 
       {apiError && (
-        <div className="rounded-lg bg-destructive/10 p-3">
+        <div className="rounded-md border border-destructive/20 bg-destructive/10 p-3">
           <p className="text-sm text-destructive" role="alert">
             {apiError}
           </p>

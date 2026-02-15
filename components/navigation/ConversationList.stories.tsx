@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react'
 import { ConversationList } from './ConversationList'
+import { ConversationListSkeleton } from '@/components/chat/ConversationListSkeleton'
 
 const meta = {
   title: 'Navigation/ConversationList',
@@ -91,4 +92,18 @@ export const ManyConversations: Story = {
     })),
     onSelect: (conv) => console.log('Selected:', conv),
   },
+}
+
+export const Skeleton: Story = {
+  args: {
+    conversations: Array.from({ length: 4 }).map((_, i) => ({
+      id: String(i + 1),
+      title: `Conversation ${i + 1}`,
+      preview: `Preview text for conversation ${i + 1}`,
+      timestamp: new Date(Date.now() - i * 3600000),
+      unread: i % 3 === 0 ? i : undefined,
+    })),
+    onSelect: (conv) => console.log('Selected:', conv),
+  },
+  render: (args) => <ConversationListSkeleton {...args} />,
 }

@@ -138,7 +138,7 @@ export function NewChatPage({ onModelSelect, userName = "there" }: NewChatPagePr
                 <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-full h-[60%] bg-gradient-to-t from-orange-500/10 via-amber-500/5 to-transparent blur-3xl" />
             </div>
 
-            <div className="flex-1 flex flex-col justify-end pb-0 px-4 sm:px-8 max-w-5xl mx-auto w-full">
+            <div className="flex-1 flex flex-col justify-end pb-40 sm:pb-44 px-4 sm:px-8 max-w-5xl mx-auto w-full">
                 {/* Welcome Section - Positioned comfortably above input */}
                 <motion.div
                     initial={{ opacity: 0, y: 10 }}

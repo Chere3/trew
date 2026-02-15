@@ -1,44 +1,22 @@
-export function TrustIndicators() {
-  const companies = [
-    { name: "Google", logo: "https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/google.svg" },
-    { name: "Microsoft", logo: "https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/microsoft.svg" },
-    { name: "Apple", logo: "https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/apple.svg" },
-    { name: "Amazon", logo: "https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/amazon.svg" },
-    { name: "Meta", logo: "https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/meta.svg" },
-    { name: "Netflix", logo: "https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/netflix.svg" },
-    { name: "Tesla", logo: "https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/tesla.svg" },
-    { name: "OpenAI", logo: "https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/openai.svg" },
-    { name: "Stripe", logo: "https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/stripe.svg" },
-    { name: "GitHub", logo: "https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/github.svg" },
-  ];
+const metrics = [
+  { label: "Teams onboarded", value: "50K+" },
+  { label: "Daily model switches", value: "1.2M" },
+  { label: "Average setup", value: "< 3 min" },
+  { label: "Potential cost reduction", value: "Up to 60%" },
+];
 
+export function TrustIndicators() {
   return (
-    <section className="relative border-y border-border/50 bg-gradient-to-b from-background to-muted/20 py-16 sm:py-20">
-      <div className="mx-auto max-w-7xl px-6 lg:px-8">
-        <div className="flex flex-col items-center gap-12 text-center">
-          <div className="space-y-3">
-            <p className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-              Trusted by builders and teams at
-            </p>
-            <div className="mx-auto h-px w-20 bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
-          </div>
-          <div className="grid grid-cols-2 gap-4 sm:gap-6 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 w-full max-w-6xl">
-            {companies.map((company, index) => (
-              <div
-                key={index}
-                className="group relative flex items-center justify-center rounded-xl border border-border/50 bg-card/50 p-6 backdrop-blur-sm transition-all duration-300 hover:border-primary/40 hover:bg-card hover:shadow-xl hover:scale-105 hover:-translate-y-1"
-              >
-                <div className="relative w-full h-12 grayscale opacity-60 transition-all duration-300 group-hover:grayscale-0 group-hover:opacity-100 dark:opacity-70 dark:group-hover:opacity-100">
-                  <img
-                    src={company.logo}
-                    alt={`${company.name} logo`}
-                    className="trust-indicator-logo w-full h-full object-contain"
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+    <section className="px-4 py-8 sm:px-6 sm:py-10 lg:px-10">
+      <div className="mx-auto max-w-7xl rounded-2xl border border-border bg-card p-4 sm:p-6">
+        <dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {metrics.map((metric) => (
+            <div key={metric.label} className="rounded-xl border border-border bg-background px-4 py-5">
+              <dt className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">{metric.label}</dt>
+              <dd className="mt-2 text-2xl font-semibold leading-none tracking-[-0.02em] text-foreground">{metric.value}</dd>
+            </div>
+          ))}
+        </dl>
       </div>
     </section>
   );

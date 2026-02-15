@@ -1,10 +1,5 @@
-"use client";
-
-import { ShieldCheck, Star } from "lucide-react";
-
+import { Star } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Card, CardContent } from "@/components/ui/card";
-import { Carousel } from "@/components/ui/carousel";
 import { cn } from "@/lib/utils";
 
 type Testimonial = {
@@ -13,232 +8,101 @@ type Testimonial = {
   role: string;
   company?: string;
   initials: string;
-  rating: number;
   avatarImage: string;
-  highlight?: string;
-  accent?: "blue" | "emerald" | "violet" | "amber";
 };
 
 const testimonials: Testimonial[] = [
   {
     quote:
-      "Being able to switch models mid-conversation is a game-changer. I use Claude for coding and GPT-4 for creative writing without losing context. Saved me 5+ hours per week.",
+      "Being able to switch models mid-conversation is a game-changer. I use Claude for coding and GPT-4 for creative writing without losing context.",
     author: "Sarah Chen",
     role: "Founder",
     company: "TechFlow",
     initials: "SC",
-    rating: 5,
     avatarImage:
       "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop&crop=faces",
-    highlight: "Switch models mid-thread",
-    accent: "violet",
   },
   {
     quote:
-      "Finally, one place for all my AI needs. I canceled 3 different subscriptions and saved $45/month while getting a better workflow. The unified interface is exactly what I needed.",
+      "Finally, one place for all my AI needs. I canceled 3 different subscriptions and saved $45/month while getting a better workflow.",
     author: "Marcus Rivera",
     role: "Senior Developer",
     company: "TechCorp",
     initials: "MR",
-    rating: 5,
     avatarImage:
       "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=faces",
-    highlight: "Replace 3 subscriptions",
-    accent: "blue",
   },
   {
     quote:
-      "The unified interface feels native. It just works, regardless of which model I’m using. Increased my productivity by 40%.",
-    author: "Dr. Emily Kim",
-    role: "AI Researcher",
-    company: "Stanford AI Lab",
-    initials: "EK",
-    rating: 5,
-    avatarImage:
-      "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=faces",
-    highlight: "One interface, many models",
-    accent: "emerald",
-  },
-  {
-    quote:
-      "As a startup founder, cost matters. Trew replaced my $60/month in multiple subscriptions with one plan. Best ROI decision I made this quarter.",
-    author: "James Park",
-    role: "Co-Founder",
-    company: "InnovateAI",
-    initials: "JP",
-    rating: 5,
-    avatarImage:
-      "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop&crop=faces",
-    highlight: "Best ROI this quarter",
-    accent: "amber",
-  },
-  {
-    quote:
-      "Context preservation when switching models is flawless. I can start with GPT-4 for brainstorming, switch to Claude for code, then back — all seamless.",
+      "Context preservation when switching models is flawless. I can start with GPT-4 for brainstorming, switch to Claude for code, then back.",
     author: "Alex Thompson",
     role: "Product Manager",
     company: "CloudScale",
     initials: "AT",
-    rating: 5,
     avatarImage:
       "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=faces",
-    highlight: "No context loss",
-    accent: "blue",
-  },
-  {
-    quote:
-      "Unlimited usage means I never hit rate limits. I’ve sent over 10,000 messages this month across models. The flexibility is unmatched.",
-    author: "Lisa Wang",
-    role: "Data Scientist",
-    company: "DataDriven Inc",
-    initials: "LW",
-    rating: 5,
-    avatarImage:
-      "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&h=150&fit=crop&crop=faces",
-    highlight: "Unlimited usage",
-    accent: "violet",
   },
 ];
 
-function Stars({ rating, className }: { rating: number; className?: string }) {
+function Stars({ className }: { className?: string }) {
   return (
-    <div className={cn("flex items-center gap-0.5", className)} aria-label={`${rating} out of 5 stars`}>
+    <div className={cn("flex items-center gap-0.5", className)} aria-label="5 out of 5 stars">
       {Array.from({ length: 5 }).map((_, i) => (
         <Star
           key={i}
-          className={cn(
-            "h-4 w-4",
-            i < rating
-              ? "fill-yellow-500 text-yellow-500 dark:fill-yellow-400 dark:text-yellow-400"
-              : "fill-none text-border"
-          )}
+          className="h-3.5 w-3.5 fill-amber-500 text-amber-500 dark:fill-amber-400 dark:text-amber-400"
         />
       ))}
     </div>
   );
 }
 
-const accentRail: Record<NonNullable<Testimonial["accent"]>, string> = {
-  blue: "bg-blue-500",
-  emerald: "bg-emerald-500",
-  violet: "bg-violet-500",
-  amber: "bg-amber-500",
-};
-
-function ReviewCard({ testimonial, featured = false }: { testimonial: Testimonial; featured?: boolean }) {
-  const rail = testimonial.accent ? accentRail[testimonial.accent] : "bg-primary";
-
+function TestimonialCard({ testimonial }: { testimonial: Testimonial }) {
   return (
-    <Card
-      className={cn(
-        "group relative h-full overflow-hidden rounded-xl border border-border bg-card transition-colors",
-        "hover:border-primary/20",
-        featured ? "shadow-sm" : ""
-      )}
-    >
-      <div aria-hidden className={cn("absolute left-0 top-0 h-full w-1.5", rail)} />
-
-      <CardContent className={cn("relative p-6", featured ? "sm:p-7" : "")}>
-        <div className="flex items-start justify-between gap-4">
-          <div className="min-w-0 space-y-2">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-2.5 py-1 text-[11px] font-medium text-muted-foreground">
-                <ShieldCheck className="h-3.5 w-3.5 text-primary" />
-                Verified
-              </span>
-              {testimonial.highlight ? (
-                <span className="inline-flex items-center rounded-full border border-border bg-muted/30 px-2.5 py-1 text-[11px] font-medium text-foreground/80">
-                  {testimonial.highlight}
-                </span>
-              ) : null}
-            </div>
-
-            <Stars rating={testimonial.rating} />
-          </div>
-
-          <span className="select-none font-serif text-4xl leading-none text-muted-foreground/25">“</span>
+    <figure className="flex h-full flex-col rounded-xl border border-border bg-card p-6">
+      <Stars className="mb-4" />
+      <blockquote className="flex-1 text-sm leading-relaxed text-foreground">
+        "{testimonial.quote}"
+      </blockquote>
+      <figcaption className="mt-6 flex items-center gap-3 border-t border-border pt-4">
+        <Avatar className="h-9 w-9 border border-border">
+          <AvatarImage src={testimonial.avatarImage} alt={testimonial.author} loading="lazy" />
+          <AvatarFallback className="bg-muted text-xs font-medium text-foreground">
+            {testimonial.initials}
+          </AvatarFallback>
+        </Avatar>
+        <div className="min-w-0">
+          <p className="truncate text-sm font-medium text-foreground">{testimonial.author}</p>
+          <p className="truncate text-xs text-muted-foreground">
+            {testimonial.role}
+            {testimonial.company ? `, ${testimonial.company}` : null}
+          </p>
         </div>
-
-        <figure className="mt-4">
-          <blockquote className={cn("text-sm leading-relaxed text-foreground", featured ? "sm:text-base" : "")}>
-            {testimonial.quote}
-          </blockquote>
-          <figcaption className="mt-6 flex items-center gap-3 border-t border-border pt-4">
-            <Avatar className="h-10 w-10 border border-border">
-              <AvatarImage src={testimonial.avatarImage} alt={`${testimonial.author} avatar`} />
-              <AvatarFallback className="bg-muted text-foreground font-medium">{testimonial.initials}</AvatarFallback>
-            </Avatar>
-            <div className="min-w-0">
-              <p className="truncate text-sm font-medium text-foreground">{testimonial.author}</p>
-              <p className="truncate text-xs text-muted-foreground">
-                {testimonial.role}
-                {testimonial.company ? ` • ${testimonial.company}` : null}
-              </p>
-            </div>
-          </figcaption>
-        </figure>
-      </CardContent>
-    </Card>
+      </figcaption>
+    </figure>
   );
 }
 
 export function Testimonials() {
-  const featured = testimonials[0];
-  const rest = testimonials.slice(1);
-
   return (
-    <section id="reviews" className="px-4 py-16 sm:px-6 sm:py-20 lg:px-10">
+    <section id="reviews" className="px-4 py-16 sm:px-6 sm:py-20 lg:px-10 lg:py-24">
       <div className="mx-auto max-w-7xl space-y-12">
-        <div className="grid gap-6 lg:grid-cols-[1fr_420px] lg:items-end">
-          <div className="space-y-3">
-            <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">Reviews</p>
-            <h2 className="text-3xl font-semibold leading-tight tracking-[-0.025em] sm:text-4xl">
-              Proof from teams shipping across models.
-            </h2>
-            <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
-              Designed for daily production work: switch providers mid-thread, keep context intact, and keep the workflow
-              clean.
-            </p>
-          </div>
-
-          <aside className="rounded-xl border border-border bg-card p-6 shadow-sm">
-            <div className="flex items-start justify-between gap-6">
-              <div className="space-y-1">
-                <div className="flex items-center gap-3">
-                  <Stars rating={5} />
-                  <span className="text-sm font-medium text-foreground">4.9</span>
-                </div>
-                <p className="text-xs text-muted-foreground">Based on 2,847 reviews</p>
-              </div>
-              <div className="text-right">
-                <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
-                  Median time-to-value
-                </p>
-                <p className="mt-1 text-lg font-semibold text-foreground">~7 minutes</p>
-              </div>
-            </div>
-
-            <div className="mt-5 grid grid-cols-2 gap-3 text-xs">
-              <div className="rounded-lg border border-border bg-background px-3 py-2">
-                <p className="font-medium text-foreground">Context continuity</p>
-                <p className="mt-0.5 text-muted-foreground">No re-explaining</p>
-              </div>
-              <div className="rounded-lg border border-border bg-background px-3 py-2">
-                <p className="font-medium text-foreground">Unified billing</p>
-                <p className="mt-0.5 text-muted-foreground">Replace subscriptions</p>
-              </div>
-            </div>
-          </aside>
+        <div className="max-w-2xl space-y-3">
+          <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+            Reviews
+          </p>
+          <h2 className="text-3xl font-semibold leading-tight tracking-[-0.025em] sm:text-4xl">
+            Trusted by teams shipping daily.
+          </h2>
+          <p className="text-sm leading-relaxed text-muted-foreground sm:text-base">
+            See what developers and teams say about switching to Trew.
+          </p>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-          <ReviewCard testimonial={featured} featured />
-
-          <div className="grid gap-4 sm:grid-cols-2 lg:pt-1">
-            {rest.map((t) => (
-              <ReviewCard key={`${t.author}-${t.company ?? ""}`} testimonial={t} />
-            ))}
-          </div>
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {testimonials.map((testimonial) => (
+            <TestimonialCard key={testimonial.author} testimonial={testimonial} />
+          ))}
         </div>
       </div>
     </section>
