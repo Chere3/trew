@@ -1,8 +1,16 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Bot, User, ChevronDown, ArrowRight } from "lucide-react";
+import { Bot, User, ChevronDown, ArrowRight, BrainCircuit, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+type ApiModel = {
+  id: string;
+  name: string;
+  provider: string;
+  flagship?: boolean;
+  rank?: number | null;
+};
 
 type Message = {
   id: string;
@@ -12,37 +20,52 @@ type Message = {
 };
 
 type DemoStep = {
-  type: "user" | "assistant" | "switch";
+  type: "user" | "assistant" | "switch" | "thinking";
   content?: string;
   model?: string;
 };
 
-const MODELS = {
-  gpt4: { name: "GPT-4o" },
-  claude: { name: "Claude 3.5" },
-  gemini: { name: "Gemini Pro" },
+type DemoModel = {
+  id: string;
+  name: string;
+  provider: string;
 };
+
+const FALLBACK_MODELS: DemoModel[] = [
+  { id: "openai/gpt-4o", name: "GPT-4o", provider: "openai" },
+  { id: "anthropic/claude-3.7-sonnet", name: "Claude 3.7 Sonnet", provider: "anthropic" },
+  { id: "google/gemini-2.0-pro", name: "Gemini 2.0 Pro", provider: "google" },
+];
 
 const DEMO_SCRIPT: DemoStep[] = [
   { type: "user", content: "Help me write a Python function to parse JSON" },
   {
     type: "assistant",
-    content: "Here's a clean function to parse JSON safely:\n\n```python\nimport json\n\ndef parse_json(data: str) -> dict:\n    try:\n        return json.loads(data)\n    except json.JSONDecodeError:\n        return {}\n```",
-    model: "gpt4",
+    content:
+      "Here's a clean function to parse JSON safely:\n\n```python\nimport json\n\ndef parse_json(data: str) -> dict:\n    try:\n        return json.loads(data)\n    except json.JSONDecodeError:\n        return {}\n```",
+    model: "m0",
   },
-  { type: "user", content: "Now review it for edge cases" },
-  { type: "switch", model: "claude" },
+  { type: "user", content: "I'm getting a hydration error in Next.js. How do I debug it?" },
+  { type: "switch", model: "m1" },
+  {
+    type: "thinking",
+    model: "m1",
+    content:
+      "Let’s narrow down the mismatch source.\n- Check if the component reads browser-only state on first render\n- Look for non-determinism (Date/Math.random)\n- Verify the DOM structure is valid\n- If needed, isolate the problematic subtree behind a Client Component",
+  },
   {
     type: "assistant",
-    content: "Good start! Consider these improvements:\n\n1. Handle `None` input\n2. Add type hints for return\n3. Log errors for debugging\n4. Consider returning `Optional[dict]`",
-    model: "claude",
+    content:
+      "Common causes are browser-only APIs (window/localStorage), non-deterministic values (Date/Math.random), or invalid HTML nesting.\n\nDebug checklist:\n1) Check the console hydration diff\n2) Search for `new Date()` in render\n3) Move browser-only logic into `useEffect`\n4) Ensure server/client output matches",
+    model: "m1",
   },
   { type: "user", content: "Summarize the key changes" },
-  { type: "switch", model: "gemini" },
+  { type: "switch", model: "m2" },
   {
     type: "assistant",
-    content: "Key improvements: null-safety, better typing, error logging, and explicit Optional return type for clearer API contracts.",
-    model: "gemini",
+    content:
+      "Key improvements: make rendering deterministic, isolate browser-only code to effects, and validate markup so server + client output match.",
+    model: "m2",
   },
 ];
 
@@ -56,7 +79,41 @@ function TypingIndicator() {
   );
 }
 
-function MessageBubble({ message, isTyping }: { message: Message; isTyping?: boolean }) {
+function ThinkingCollapsible({ content, isStreaming }: { content: string; isStreaming?: boolean }) {
+  if (!isStreaming && !content) return null;
+
+  return (
+    <div className="mb-2 max-w-[85%] sm:max-w-[75%] ml-10">
+      <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground/75 mb-2 select-none">
+        <div className={cn("-ml-0.5 p-1 rounded-md bg-muted/50", isStreaming && "animate-pulse")}>
+          <BrainCircuit className={cn("w-3.5 h-3.5", isStreaming && "animate-[spin_2.4s_linear_infinite]")} />
+        </div>
+        <span>{isStreaming ? "Thinking..." : "Thought Process"}</span>
+        {isStreaming && <span className="text-[10px] animate-pulse opacity-70">●</span>}
+        <ChevronDown className="w-3.5 h-3.5 opacity-50" />
+      </div>
+
+      <div className="overflow-hidden">
+        <div className="relative pl-4 border-l-2 border-border/40 ml-2 my-2">
+          <div className="text-sm text-muted-foreground/60 italic max-h-[220px] overflow-y-auto pr-2 custom-scrollbar">
+            <span className="whitespace-pre-wrap text-xs">{content}</span>
+            {isStreaming ? <span className="ml-1 text-[10px] animate-pulse opacity-70">●</span> : null}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function MessageBubble({
+  message,
+  isTyping,
+  modelLabel,
+}: {
+  message: Message;
+  isTyping?: boolean;
+  modelLabel?: string;
+}) {
   const isUser = message.role === "user";
 
   return (
@@ -75,11 +132,9 @@ function MessageBubble({ message, isTyping }: { message: Message; isTyping?: boo
       </div>
 
       <div className={cn("flex max-w-[85%] flex-col min-w-0", isUser ? "items-end" : "items-start")}>
-        {!isUser && message.model ? (
-          <div className={cn("mb-1.5 flex items-center gap-2", isUser ? "flex-row-reverse" : "flex-row")}>
-            <span className="text-xs font-medium text-foreground/70">
-              {MODELS[message.model as keyof typeof MODELS]?.name}
-            </span>
+        {!isUser && modelLabel ? (
+          <div className="mb-1.5 flex items-center gap-2">
+            <span className="text-xs font-medium text-foreground/70">{modelLabel}</span>
           </div>
         ) : null}
 
@@ -91,20 +146,16 @@ function MessageBubble({ message, isTyping }: { message: Message; isTyping?: boo
               : "bg-card text-foreground rounded-bl-sm border border-border/60 shadow-soft"
           )}
         >
-          {isTyping ? (
-            <TypingIndicator />
-          ) : (
-            <span className="whitespace-pre-wrap">{message.content}</span>
-          )}
+          {isTyping ? <TypingIndicator /> : <span className="whitespace-pre-wrap">{message.content}</span>}
         </div>
       </div>
     </div>
   );
 }
 
-function ModelSwitchIndicator({ from, to }: { from: string; to: string }) {
-  const fromModel = MODELS[from as keyof typeof MODELS];
-  const toModel = MODELS[to as keyof typeof MODELS];
+function ModelSwitchIndicator({ from, to, models }: { from: number; to: number; models: DemoModel[] }) {
+  const fromModel = models[from];
+  const toModel = models[to];
 
   return (
     <div className="flex items-center justify-center py-2">
@@ -119,12 +170,22 @@ function ModelSwitchIndicator({ from, to }: { from: string; to: string }) {
 
 export function ChatDemo() {
   const [messages, setMessages] = useState<Message[]>([]);
-  const [currentModel, setCurrentModel] = useState("gpt4");
+  const [demoModels, setDemoModels] = useState<DemoModel[]>(FALLBACK_MODELS);
+  const [currentModelIndex, setCurrentModelIndex] = useState(0);
   const [stepIndex, setStepIndex] = useState(0);
   const [isTyping, setIsTyping] = useState(false);
-  const [showSwitch, setShowSwitch] = useState<{ from: string; to: string } | null>(null);
+  const [isThinking, setIsThinking] = useState(false);
+  const [thinkingText, setThinkingText] = useState("");
+  const [showSwitch, setShowSwitch] = useState<{ from: number; to: number } | null>(null);
   const [isInView, setIsInView] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  const modelsLoadedRef = useRef(false);
+  const animTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const thinkingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const currentModel = demoModels[currentModelIndex] || demoModels[0];
+
   // Intersection observer
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -135,54 +196,166 @@ export function ChatDemo() {
     return () => observer.disconnect();
   }, []);
 
-  // Animation loop
   useEffect(() => {
     if (!isInView) return;
+    if (modelsLoadedRef.current) return;
 
-    const step = DEMO_SCRIPT[stepIndex];
-    if (!step) {
-      // Reset after pause
-      const timeout = setTimeout(() => {
-        setMessages([]);
-        setCurrentModel("gpt4");
-        setStepIndex(0);
-        setShowSwitch(null);
-      }, 3000);
-      return () => clearTimeout(timeout);
+    let cancelled = false;
+
+    async function loadModels() {
+      try {
+        const res = await fetch("/api/models");
+        if (!res.ok) return;
+        const json = (await res.json()) as { models?: ApiModel[] };
+        const models = Array.isArray(json.models) ? json.models : [];
+
+        const sorted = [...models].sort((a, b) => {
+          const aRank = a.rank ?? Number.POSITIVE_INFINITY;
+          const bRank = b.rank ?? Number.POSITIVE_INFINITY;
+          return aRank - bRank;
+        });
+
+        const flagship = sorted.filter((m) => m.flagship);
+        const picked = (flagship.length ? flagship : sorted).slice(0, 3);
+        if (!picked.length) return;
+
+        const next: DemoModel[] = picked.map((m) => ({ id: m.id, name: m.name, provider: m.provider }));
+        if (!cancelled) {
+          setDemoModels(next);
+          modelsLoadedRef.current = true;
+        }
+      } catch {
+        // fail-open to fallback models
+      }
     }
 
-    let timeout: NodeJS.Timeout;
+    void loadModels();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isInView]);
+
+  const resolveStepModelIndex = (token?: string) => {
+    if (token === "m1") return 1;
+    if (token === "m2") return 2;
+    return 0;
+  };
+
+  const clearTimers = () => {
+    if (animTimeoutRef.current) {
+      clearTimeout(animTimeoutRef.current);
+      animTimeoutRef.current = null;
+    }
+    if (thinkingIntervalRef.current) {
+      clearInterval(thinkingIntervalRef.current);
+      thinkingIntervalRef.current = null;
+    }
+  };
+
+  const startThinkingReveal = (fullText: string) => {
+    if (thinkingIntervalRef.current) {
+      clearInterval(thinkingIntervalRef.current);
+      thinkingIntervalRef.current = null;
+    }
+
+    const seeded = fullText.slice(0, 2);
+    setThinkingText(seeded);
+
+    let i = 2;
+    thinkingIntervalRef.current = setInterval(() => {
+      i += 2;
+      const next = fullText.slice(0, i);
+      setThinkingText(next);
+      if (i >= fullText.length && thinkingIntervalRef.current) {
+        clearInterval(thinkingIntervalRef.current);
+        thinkingIntervalRef.current = null;
+      }
+    }, 24);
+
+    return () => {
+      if (thinkingIntervalRef.current) {
+        clearInterval(thinkingIntervalRef.current);
+        thinkingIntervalRef.current = null;
+      }
+    };
+  };
+
+  // Animation loop
+  useEffect(() => {
+    if (!isInView) {
+      clearTimers();
+      setIsTyping(false);
+      setIsThinking(false);
+      return;
+    }
+
+    clearTimers();
+
+    const step = DEMO_SCRIPT[stepIndex];
+    const messageId = `msg-${stepIndex}`;
+
+    if (!step) {
+      animTimeoutRef.current = setTimeout(() => {
+        setMessages([]);
+        setCurrentModelIndex(0);
+        setStepIndex(0);
+        setShowSwitch(null);
+        setIsTyping(false);
+        setIsThinking(false);
+        setThinkingText("");
+      }, 3000);
+
+      return () => clearTimers();
+    }
 
     if (step.type === "switch") {
-      setShowSwitch({ from: currentModel, to: step.model! });
-      timeout = setTimeout(() => {
-        setCurrentModel(step.model!);
+      const toIndex = resolveStepModelIndex(step.model);
+      setShowSwitch({ from: currentModelIndex, to: toIndex });
+      animTimeoutRef.current = setTimeout(() => {
+        setCurrentModelIndex(toIndex);
         setShowSwitch(null);
         setStepIndex((i) => i + 1);
       }, 1200);
     } else if (step.type === "user") {
-      timeout = setTimeout(() => {
-        setMessages((prev) => [
-          ...prev,
-          { id: `msg-${stepIndex}`, role: "user", content: step.content! },
-        ]);
+      animTimeoutRef.current = setTimeout(() => {
+        setMessages((prev) => {
+          if (prev.some((m) => m.id === messageId)) return prev;
+          return [...prev, { id: messageId, role: "user", content: step.content! }];
+        });
         setStepIndex((i) => i + 1);
       }, 800);
-    } else if (step.type === "assistant") {
-      setIsTyping(true);
-      setMessages((prev) => [...prev, { id: `msg-${stepIndex}`, role: "assistant", content: "", model: step.model }]);
+    } else if (step.type === "thinking") {
+      setIsThinking(true);
+      const fullText = step.content ?? "";
 
-      timeout = setTimeout(() => {
+      const stop = startThinkingReveal(fullText);
+
+      animTimeoutRef.current = setTimeout(() => {
+        stop();
+        setIsThinking(false);
+        setStepIndex((i) => i + 1);
+      }, Math.min(2200, Math.max(1400, fullText.length * 14)));
+    } else if (step.type === "assistant") {
+      const modelIndex = resolveStepModelIndex(step.model);
+      setIsTyping(true);
+
+      setMessages((prev) => {
+        if (prev.some((m) => m.id === messageId)) return prev;
+        return [...prev, { id: messageId, role: "assistant", content: "", model: `m${modelIndex}` }];
+      });
+
+      animTimeoutRef.current = setTimeout(() => {
         setIsTyping(false);
-        setMessages((prev) =>
-          prev.map((m) => (m.id === `msg-${stepIndex}` ? { ...m, content: step.content! } : m))
-        );
+        setMessages((prev) => prev.map((m) => (m.id === messageId ? { ...m, content: step.content! } : m)));
         setStepIndex((i) => i + 1);
       }, 1500);
     }
 
-    return () => clearTimeout(timeout);
-  }, [stepIndex, isInView, currentModel]);
+    return () => clearTimers();
+  }, [stepIndex, isInView, currentModelIndex]);
+
+  const visibleMessages = messages.slice(-4);
 
   return (
     <div
@@ -195,9 +368,7 @@ export function ChatDemo() {
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-2 rounded-full border border-border bg-muted/30 px-3 py-1.5">
             <Bot className="h-3.5 w-3.5 text-muted-foreground" />
-            <span className="text-xs font-medium text-foreground/80">
-              {MODELS[currentModel as keyof typeof MODELS]?.name}
-            </span>
+            <span className="text-xs font-medium text-foreground/80">{currentModel?.name}</span>
             <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
           </div>
         </div>
@@ -210,14 +381,22 @@ export function ChatDemo() {
       {/* Messages */}
       <div className="flex-1 overflow-hidden px-4 py-4">
         <div className="flex h-full flex-col justify-end space-y-4">
-          {messages.map((message, index) => (
+          {visibleMessages.map((message, index) => (
             <MessageBubble
               key={message.id}
               message={message}
-              isTyping={isTyping && index === messages.length - 1 && message.role === "assistant"}
+              modelLabel={
+                message.role === "assistant"
+                  ? demoModels[resolveStepModelIndex(message.model)]?.name
+                  : undefined
+              }
+              isTyping={isTyping && index === visibleMessages.length - 1 && message.role === "assistant"}
             />
           ))}
-          {showSwitch && <ModelSwitchIndicator from={showSwitch.from} to={showSwitch.to} />}
+
+          {showSwitch && <ModelSwitchIndicator from={showSwitch.from} to={showSwitch.to} models={demoModels} />}
+
+          {isThinking ? <ThinkingCollapsible content={thinkingText} isStreaming /> : null}
         </div>
       </div>
 
