@@ -49,16 +49,16 @@ export function Navbar({
                 <Image
                   src="/brand/trew-mark-black.png"
                   alt="Trew"
-                  width={40}
-                  height={40}
+                  width={44}
+                  height={44}
                   priority
                   className="block dark:hidden"
                 />
                 <Image
                   src="/brand/trew-mark-white.png"
                   alt="Trew"
-                  width={40}
-                  height={40}
+                  width={44}
+                  height={44}
                   priority
                   className="hidden dark:block"
                 />
