@@ -52,7 +52,15 @@ export function Navbar({
                   width={40}
                   height={40}
                   priority
-                  className="dark:invert"
+                  className="block dark:hidden"
+                />
+                <Image
+                  src="/brand/trew-mark-white.png"
+                  alt="Trew"
+                  width={40}
+                  height={40}
+                  priority
+                  className="hidden dark:block"
                 />
                 <span className="text-base font-semibold tracking-tight text-foreground">Trew</span>
               </Link>
