@@ -45,6 +45,7 @@ export function ChatInterface() {
   const [selectedModel, setSelectedModel] = useState(AUTO_MODEL_ID);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [keyboardInset, setKeyboardInset] = useState(0);
+  const [visualViewportHeight, setVisualViewportHeight] = useState<number | null>(null);
 
   const { data: session } = useSession();
   const router = useRouter();
@@ -82,7 +83,15 @@ export function ChatInterface() {
     const vv = window.visualViewport;
     if (!vv) return;
 
+    // Prevent the page itself from scrolling while the chat is mounted.
+    // The chat manages its own internal scrolling.
+    const prevOverflow = document.body.style.overflow;
+    const prevOverscroll = document.body.style.overscrollBehavior;
+    document.body.style.overflow = "hidden";
+    document.body.style.overscrollBehavior = "none";
+
     const onViewportChange = () => {
+      setVisualViewportHeight(vv.height);
       // visualViewport.height excludes the browser UI + keyboard. When the keyboard opens,
       // `innerHeight - visualViewport.height` approximates the occluded bottom area.
       const inset = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
@@ -98,6 +107,8 @@ export function ChatInterface() {
       vv.removeEventListener("resize", onViewportChange);
       vv.removeEventListener("scroll", onViewportChange);
       window.removeEventListener("orientationchange", onViewportChange);
+      document.body.style.overflow = prevOverflow;
+      document.body.style.overscrollBehavior = prevOverscroll;
     };
   }, []);
 
@@ -854,7 +865,10 @@ export function ChatInterface() {
   };
 
   return (
-    <div className="relative flex min-h-[100svh] h-[100dvh] overflow-hidden bg-background font-sans">
+    <div
+      className="relative flex min-h-[100svh] h-[100dvh] overflow-hidden bg-background font-sans"
+      style={visualViewportHeight ? { height: `${Math.round(visualViewportHeight)}px` } : undefined}
+    >
       {/* Sidebar Toggle (Mobile/Collapsed) */}
       {sidebarCollapsed && (
         <div className="absolute left-4 top-4 z-50">
