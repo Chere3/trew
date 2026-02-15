@@ -364,8 +364,9 @@ export function ChatDemo() {
   useEffect(() => {
     if (!isInView) return;
     // Ensure we scroll the internal container by targeting an element inside it
+    // (thinkingText changes can increase height, so keep following the end anchor)
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-  }, [visibleMessages.length, isTyping, isThinking, showSwitch, isInView]);
+  }, [visibleMessages.length, isTyping, isThinking, thinkingText, showSwitch, isInView]);
 
   return (
     <div
