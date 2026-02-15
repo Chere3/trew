@@ -1,4 +1,5 @@
 
+import Image from 'next/image'
 import { MarkdownRenderer } from '@/components/media/MarkdownRenderer'
 import { cn } from '@/lib/utils'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -223,10 +224,13 @@ export function MessageBubble({
                 <div key={index} className="relative group/attachment">
                   {file.type.startsWith('image/') ? (
                     <div className="relative rounded-lg overflow-hidden border border-border/20 max-w-[200px] max-h-[200px]">
-                      <img
+                      <Image
                         src={file.url}
                         alt={file.name}
+                        width={200}
+                        height={200}
                         className="w-full h-full object-cover"
+                        unoptimized
                       />
                     </div>
                   ) : (

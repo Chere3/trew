@@ -1,10 +1,11 @@
 'use client'
 
+import Image from 'next/image'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { Send, Paperclip, Mic, Smile } from 'lucide-react'
-import { useState, useRef, KeyboardEvent } from 'react'
+import { useEffect, useState, useRef, KeyboardEvent } from 'react'
 import { EmojiPicker } from './EmojiPicker'
 
 export interface MessageComposerProps {
@@ -16,6 +17,29 @@ export interface MessageComposerProps {
   maxLength?: number
   className?: string
   autoFocus?: boolean
+}
+
+function AttachmentPreviewImage({ file }: { file: File }) {
+  const [url, setUrl] = useState<string | null>(null)
+
+  useEffect(() => {
+    const nextUrl = URL.createObjectURL(file)
+    setUrl(nextUrl)
+    return () => URL.revokeObjectURL(nextUrl)
+  }, [file])
+
+  if (!url) return null
+
+  return (
+    <Image
+      src={url}
+      alt={file.name}
+      width={80}
+      height={80}
+      className="w-full h-full object-cover"
+      unoptimized
+    />
+  )
 }
 
 export function MessageComposer({
@@ -143,11 +167,7 @@ export function MessageComposer({
                 className="relative flex-shrink-0 w-20 h-20 rounded-xl overflow-hidden border border-border group"
               >
                 {file.type.startsWith('image/') ? (
-                  <img
-                    src={URL.createObjectURL(file)}
-                    alt={file.name}
-                    className="w-full h-full object-cover"
-                  />
+                  <AttachmentPreviewImage file={file} />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center bg-secondary text-xs text-center p-1 break-words">
                     {file.name.split('.').pop()}
