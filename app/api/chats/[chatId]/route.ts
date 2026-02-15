@@ -2,6 +2,8 @@ import { db } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
+import { getCached, CACHE_KEYS, CACHE_TTL } from "@/lib/cache";
+import { invalidateChat } from "@/lib/cache/strategies";
 
 export async function GET(
     req: Request,
@@ -19,9 +21,23 @@ export async function GET(
     const userId = session.user.id;
 
     try {
-        const chat = db
-            .prepare("SELECT * FROM chat WHERE id = ? AND userId = ?")
-            .get(chatId, userId);
+        // Optimized: Use index on (id, userId) for fast lookup
+        const chatResult = await db.query(
+            'SELECT * FROM chat WHERE id = $1 AND "userId" = $2',
+            [chatId, userId]
+        );
+        const chatRow = chatResult.rows[0];
+        if (!chatRow) {
+            return NextResponse.json({ error: "Chat not found" }, { status: 404 });
+        }
+        // Convert date fields from string (PostgreSQL bigint) to number
+        const chat = {
+            ...chatRow,
+            createdAt: typeof chatRow.createdAt === 'string' ? parseInt(chatRow.createdAt, 10) : (chatRow.createdAt || Date.now()),
+            updatedAt: typeof chatRow.updatedAt === 'string' ? parseInt(chatRow.updatedAt, 10) : (chatRow.updatedAt || Date.now()),
+            archivedAt: chatRow.archivedAt ? (typeof chatRow.archivedAt === 'string' ? parseInt(chatRow.archivedAt, 10) : chatRow.archivedAt) : null,
+            deletedAt: chatRow.deletedAt ? (typeof chatRow.deletedAt === 'string' ? parseInt(chatRow.deletedAt, 10) : chatRow.deletedAt) : null,
+        };
 
         if (!chat) {
             return NextResponse.json({ error: "Chat not found" }, { status: 404 });
@@ -37,19 +53,26 @@ export async function GET(
         const before = beforeParam ? parseInt(beforeParam, 10) : null;
         const after = afterParam ? parseInt(afterParam, 10) : null;
 
-        let messages: any[];
-        let hasMore = false;
-        let nextCursor: number | undefined;
+        // Cache key for messages
+        const cacheKey = CACHE_KEYS.CHAT_MESSAGES(chatId, limit, before, after);
+        
+        // Fetch messages with caching
+        const messagesData = await getCached(
+          cacheKey,
+          async () => {
+            let messages: any[];
+            let hasMore = false;
+            let nextCursor: number | undefined;
 
         if (before !== null) {
             // Fetch messages before the cursor (for loading older messages)
-            const query = db.prepare(`
+            const result = await db.query(`
                 SELECT * FROM message 
-                WHERE chatId = ? AND createdAt < ? 
-                ORDER BY createdAt DESC 
-                LIMIT ?
-            `);
-            messages = query.all(chatId, before, limit + 1) as any[];
+                WHERE "chatId" = $1 AND "createdAt" < $2 
+                ORDER BY "createdAt" DESC 
+                LIMIT $3
+            `, [chatId, before, limit + 1]);
+            messages = result.rows;
             
             // Check if there are more messages
             if (messages.length > limit) {
@@ -59,20 +82,21 @@ export async function GET(
             
             // Set nextCursor to the oldest message's timestamp
             if (messages.length > 0) {
-                nextCursor = messages[messages.length - 1].createdAt;
+                const lastMsg = messages[messages.length - 1];
+                nextCursor = typeof lastMsg.createdAt === 'string' ? parseInt(lastMsg.createdAt, 10) : (lastMsg.createdAt || Date.now());
             }
             
             // Reverse to get ascending order
             messages = messages.reverse();
         } else if (after !== null) {
             // Fetch messages after the cursor (for loading newer messages)
-            const query = db.prepare(`
+            const result = await db.query(`
                 SELECT * FROM message 
-                WHERE chatId = ? AND createdAt > ? 
-                ORDER BY createdAt ASC 
-                LIMIT ?
-            `);
-            messages = query.all(chatId, after, limit + 1) as any[];
+                WHERE "chatId" = $1 AND "createdAt" > $2 
+                ORDER BY "createdAt" ASC 
+                LIMIT $3
+            `, [chatId, after, limit + 1]);
+            messages = result.rows;
             
             // Check if there are more messages
             if (messages.length > limit) {
@@ -82,50 +106,59 @@ export async function GET(
             
             // Set nextCursor to the newest message's timestamp
             if (messages.length > 0) {
-                nextCursor = messages[messages.length - 1].createdAt;
+                const lastMsg = messages[messages.length - 1];
+                nextCursor = typeof lastMsg.createdAt === 'string' ? parseInt(lastMsg.createdAt, 10) : (lastMsg.createdAt || Date.now());
             }
         } else {
             // No pagination: fetch most recent messages (for initial load)
-            // Get total count first
-            const totalCount = db
-                .prepare("SELECT COUNT(*) as count FROM message WHERE chatId = ?")
-                .get(chatId) as { count: number };
-            
-            const query = db.prepare(`
+            // Optimized: Use LIMIT+1 pattern to avoid COUNT query (O(1) instead of O(n))
+            const result = await db.query(`
                 SELECT * FROM message 
-                WHERE chatId = ? 
-                ORDER BY createdAt DESC 
-                LIMIT ?
-            `);
-            messages = query.all(chatId, limit + 1) as any[];
+                WHERE "chatId" = $1 
+                ORDER BY "createdAt" DESC 
+                LIMIT $2
+            `, [chatId, limit + 1]);
+            messages = result.rows;
             
-            // Check if there are more messages
-            if (messages.length > limit || totalCount.count > limit) {
+            // Check if there are more messages (if we got limit+1, there are more)
+            if (messages.length > limit) {
                 hasMore = true;
                 messages = messages.slice(0, limit);
             }
             
             // Set nextCursor to the oldest message's timestamp
             if (messages.length > 0) {
-                nextCursor = messages[messages.length - 1].createdAt;
+                const lastMsg = messages[messages.length - 1];
+                nextCursor = typeof lastMsg.createdAt === 'string' ? parseInt(lastMsg.createdAt, 10) : (lastMsg.createdAt || Date.now());
             }
             
             // Reverse to get ascending order (oldest first)
             messages = messages.reverse();
-        }
+            }
 
-        // Parse attachments JSON for each message and ensure isStreaming is false for DB messages
-        const parsedMessages = messages.map(msg => ({
-            ...msg,
-            attachments: msg.attachments ? JSON.parse(msg.attachments) : null,
-            isStreaming: false // DB messages are never streaming
-        }));
+            // Parse attachments JSON for each message and ensure isStreaming is false for DB messages
+            // Convert createdAt from string (PostgreSQL bigint) to number
+            const parsedMessages = messages.map(msg => ({
+                ...msg,
+                attachments: msg.attachments ? JSON.parse(msg.attachments) : null,
+                createdAt: typeof msg.createdAt === 'string' ? parseInt(msg.createdAt, 10) : (msg.createdAt || Date.now()),
+                isStreaming: false // DB messages are never streaming
+            }));
+
+            return {
+                messages: parsedMessages,
+                hasMore,
+                nextCursor
+            };
+          },
+          CACHE_TTL.CHAT_MESSAGES
+        );
 
         return NextResponse.json({ 
             ...chat, 
-            messages: parsedMessages,
-            hasMore,
-            nextCursor
+            messages: messagesData.messages,
+            hasMore: messagesData.hasMore,
+            nextCursor: messagesData.nextCursor
         });
     } catch (error) {
         console.error("Error fetching chat:", error);
@@ -151,23 +184,27 @@ export async function PATCH(
 
     try {
         let result;
-
         if (archived !== undefined) {
             const archivedAt = archived ? Date.now() : null;
-            result = db.prepare(
-                "UPDATE chat SET archivedAt = ?, updatedAt = ? WHERE id = ? AND userId = ?"
-            ).run(archivedAt, Date.now(), chatId, userId);
+            result = await db.query(
+                'UPDATE chat SET "archivedAt" = $1, "updatedAt" = $2 WHERE id = $3 AND "userId" = $4',
+                [archivedAt, Date.now(), chatId, userId]
+            );
         } else if (title !== undefined) {
-            result = db.prepare(
-                "UPDATE chat SET title = ?, updatedAt = ? WHERE id = ? AND userId = ?"
-            ).run(title, Date.now(), chatId, userId);
+            result = await db.query(
+                'UPDATE chat SET title = $1, "updatedAt" = $2 WHERE id = $3 AND "userId" = $4',
+                [title, Date.now(), chatId, userId]
+            );
         } else {
             return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
         }
 
-        if (result.changes === 0) {
+        if (result.rowCount === 0) {
             return NextResponse.json({ error: "Chat not found or unauthorized" }, { status: 404 });
         }
+
+        // Invalidate chat cache
+        await invalidateChat(chatId);
 
         return NextResponse.json({ success: true });
     } catch (error) {
@@ -193,13 +230,17 @@ export async function DELETE(
 
     try {
         // Soft delete
-        const result = db.prepare(
-            "UPDATE chat SET deletedAt = ? WHERE id = ? AND userId = ?"
-        ).run(Date.now(), chatId, userId);
+        const result = await db.query(
+            'UPDATE chat SET "deletedAt" = $1 WHERE id = $2 AND "userId" = $3',
+            [Date.now(), chatId, userId]
+        );
 
-        if (result.changes === 0) {
+        if (result.rowCount === 0) {
             return NextResponse.json({ error: "Chat not found or unauthorized" }, { status: 404 });
         }
+
+        // Invalidate chat cache
+        await invalidateChat(chatId);
 
         return NextResponse.json({ success: true });
     } catch (error) {

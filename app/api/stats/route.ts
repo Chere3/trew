@@ -86,9 +86,11 @@ export async function GET(req: Request) {
 
                 // Verify chat ownership
                 const { db } = await import("@/lib/db");
-                const chat = db
-                    .prepare("SELECT userId FROM chat WHERE id = ?")
-                    .get(id) as { userId: string } | undefined;
+                const chatResult = await db.query(
+                    'SELECT "userId" FROM chat WHERE id = $1',
+                    [id]
+                );
+                const chat = chatResult.rows[0] as { userId: string } | undefined;
 
                 if (!chat) {
                     return NextResponse.json({ error: ERROR_MESSAGES.NOT_FOUND.CHAT }, { status: HTTP_STATUS.NOT_FOUND });
@@ -98,7 +100,7 @@ export async function GET(req: Request) {
                     return NextResponse.json({ error: ERROR_MESSAGES.FORBIDDEN }, { status: HTTP_STATUS.FORBIDDEN });
                 }
 
-                const stats = getChatStats(id, startDate, endDate);
+                const stats = await getChatStats(id, startDate, endDate);
                 if (!stats) {
                     return NextResponse.json({ error: ERROR_MESSAGES.NOT_FOUND.CHAT }, { status: HTTP_STATUS.NOT_FOUND });
                 }
@@ -134,7 +136,7 @@ export async function GET(req: Request) {
 
             case STATS_SCOPE_ALL_MODELS: {
                 // Get statistics for all models
-                const allModelsStats = getAllModelsStats(startDate, endDate);
+                const allModelsStats = await getAllModelsStats(startDate, endDate);
 
                 return NextResponse.json({
                     scope: STATS_SCOPE_ALL_MODELS,

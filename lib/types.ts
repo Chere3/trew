@@ -64,6 +64,7 @@ export interface Attachment {
 
 export interface Message {
   id: string;
+  chatId?: string;
   role: MessageRole | "user" | "assistant"; // Support both for backward compatibility
   content: string;
   createdAt: number;

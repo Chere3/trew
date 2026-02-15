@@ -28,17 +28,27 @@ export async function GET(
     }
 
     try {
-        const memory = getUserSemanticMemory(userId);
-        
-        // Get updatedAt timestamp
-        const result = db
-            .prepare("SELECT updatedAt FROM user_semantic_memory WHERE userId = ?")
-            .get(userId) as { updatedAt: number } | undefined;
+        // Optimized: Fetch memory and updatedAt in a single query
+        const result = await db.query(
+            'SELECT facts, "updatedAt" FROM user_semantic_memory WHERE "userId" = $1',
+            [userId]
+        );
+        const row = result.rows[0] as { facts: string; updatedAt: number } | undefined;
+
+        if (!row) {
+            return NextResponse.json({
+                userId,
+                facts: {},
+                updatedAt: null,
+            });
+        }
+
+        const memory = row.facts ? JSON.parse(row.facts) : {};
 
         return NextResponse.json({
             userId,
             facts: memory || {},
-            updatedAt: result?.updatedAt || null,
+            updatedAt: row.updatedAt || null,
         });
     } catch (error) {
         console.error("Error fetching user memory:", error);
@@ -79,7 +89,7 @@ export async function PUT(
             );
         }
 
-        updateUserSemanticMemory(userId, facts);
+        await updateUserSemanticMemory(userId, facts);
 
         return NextResponse.json({
             userId,
@@ -121,11 +131,11 @@ export async function DELETE(
 
         if (factKey) {
             // Delete specific fact
-            const currentMemory = getUserSemanticMemory(userId);
+            const currentMemory = await getUserSemanticMemory(userId);
             if (currentMemory && factKey in currentMemory) {
                 const updatedFacts = { ...currentMemory };
                 delete updatedFacts[factKey];
-                updateUserSemanticMemory(userId, updatedFacts);
+                await updateUserSemanticMemory(userId, updatedFacts);
                 return NextResponse.json({
                     message: `Fact "${factKey}" deleted successfully`,
                 });
@@ -137,7 +147,7 @@ export async function DELETE(
             }
         } else {
             // Clear all memory
-            db.prepare("DELETE FROM user_semantic_memory WHERE userId = ?").run(userId);
+            await db.query('DELETE FROM user_semantic_memory WHERE "userId" = $1', [userId]);
             return NextResponse.json({
                 message: "All memory cleared successfully",
             });

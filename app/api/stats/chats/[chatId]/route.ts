@@ -43,17 +43,15 @@ export async function GET(
     const userId = session.user.id;
 
     try {
-        // Verify chat ownership
-        const chat = db
-            .prepare("SELECT id, userId FROM chat WHERE id = ?")
-            .get(chatId) as { id: string; userId: string } | undefined;
+        // Optimized: Combine ownership check with userId filter for better index usage
+        const chatResult = await db.query(
+            'SELECT id, "userId" FROM chat WHERE id = $1 AND "userId" = $2',
+            [chatId, userId]
+        );
+        const chat = chatResult.rows[0] as { id: string; userId: string } | undefined;
 
         if (!chat) {
             return NextResponse.json({ error: "Chat not found" }, { status: 404 });
-        }
-
-        if (chat.userId !== userId) {
-            return NextResponse.json({ error: "Forbidden" }, { status: 403 });
         }
 
         const url = new URL(req.url);
@@ -65,7 +63,7 @@ export async function GET(
         const startDate = startDateParam ? parseInt(startDateParam) : periodStartDate;
         const endDate = endDateParam ? parseInt(endDateParam) : periodEndDate;
 
-        const stats = getChatStats(chatId, startDate, endDate);
+        const stats = await getChatStats(chatId, startDate, endDate);
 
         if (!stats) {
             return NextResponse.json({ error: "Chat not found" }, { status: 404 });

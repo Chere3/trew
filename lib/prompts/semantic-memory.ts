@@ -8,6 +8,8 @@ import {
     DEFAULT_MEMORY_SCORE_THRESHOLD
 } from "@/lib/constants";
 import type { MessageForSummary } from "./rolling-summary";
+import { getCached, CACHE_KEYS, CACHE_TTL } from "@/lib/cache";
+import { invalidateUserMemory } from "@/lib/cache/strategies";
 
 export interface ExtractedFacts {
     facts: Record<string, any>;
@@ -203,44 +205,59 @@ export function shouldSaveFact(
 }
 
 /**
- * Get user's semantic memory from database
+ * Get user's semantic memory from database (with caching)
  */
-export function getUserSemanticMemory(userId: string): Record<string, any> | null {
-    try {
-        const result = db
-            .prepare("SELECT facts FROM user_semantic_memory WHERE userId = ?")
-            .get(userId) as { facts: string } | undefined;
+export async function getUserSemanticMemory(userId: string): Promise<Record<string, any> | null> {
+    const cacheKey = CACHE_KEYS.USER_MEMORY(userId);
+    
+    return getCached(
+        cacheKey,
+        async () => {
+            try {
+                const result = await db.query(
+                    'SELECT facts FROM user_semantic_memory WHERE "userId" = $1',
+                    [userId]
+                );
 
-        if (!result) {
-            return null;
-        }
+                if (result.rows.length === 0) {
+                    return null;
+                }
 
-        const parsed = JSON.parse(result.facts);
-        return parsed;
-    } catch (error) {
-        console.error("Failed to get user semantic memory:", error);
-        return null;
-    }
+                const parsed = JSON.parse(result.rows[0].facts);
+                return parsed;
+            } catch (error) {
+                console.error("Failed to get user semantic memory:", error);
+                return null;
+            }
+        },
+        CACHE_TTL.USER_MEMORY
+    );
 }
 
 /**
- * Update or insert user's semantic memory
+ * Update or insert user's semantic memory (with cache invalidation)
  */
-export function updateUserSemanticMemory(
+export async function updateUserSemanticMemory(
     userId: string,
     facts: Record<string, any>
-): void {
+): Promise<void> {
     try {
         const now = Date.now();
         const factsJson = JSON.stringify(facts);
 
-        db.prepare(`
-            INSERT INTO user_semantic_memory (userId, facts, updatedAt)
-            VALUES (?, ?, ?)
-            ON CONFLICT(userId) DO UPDATE SET
-                facts = ?,
-                updatedAt = ?
-        `).run(userId, factsJson, now, factsJson, now);
+        await db.query(`
+            INSERT INTO user_semantic_memory ("userId", facts, "updatedAt")
+            VALUES ($1, $2, $3)
+            ON CONFLICT("userId") DO UPDATE SET
+                facts = $4,
+                "updatedAt" = $5
+        `, [userId, factsJson, now, factsJson, now]);
+
+        // Invalidate cache and update with new value
+        await invalidateUserMemory(userId);
+        // Update cache with new value (write-through)
+        const { setCache } = await import("@/lib/cache/redis");
+        await setCache(CACHE_KEYS.USER_MEMORY(userId), facts, CACHE_TTL.USER_MEMORY);
     } catch (error) {
         console.error("Failed to update user semantic memory:", error);
         throw error;
