@@ -198,7 +198,11 @@ export function ChatDemo() {
   }, [stepIndex, isInView, currentModel]);
 
   return (
-    <div ref={containerRef} className="flex h-full flex-col bg-background">
+    <div
+      ref={containerRef}
+      className="flex h-full flex-col bg-background pointer-events-none select-none"
+      aria-hidden
+    >
       {/* Header */}
       <div className="flex items-center justify-between border-b border-border px-4 py-2.5">
         <div className="flex items-center gap-2">
@@ -215,7 +219,7 @@ export function ChatDemo() {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-4">
+      <div className="flex-1 overflow-hidden px-4 py-4">
         <div className="space-y-4">
           {messages.map((message, index) => (
             <MessageBubble
