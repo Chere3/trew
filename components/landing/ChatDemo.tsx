@@ -1,461 +1,242 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import useSWR from "swr";
-import { MessageList } from "@/components/chat/MessageList";
-import { MessageComposer } from "@/components/input/MessageComposer";
-import { ModelSelector } from "@/components/input/ModelSelector";
-import { getProviderConfig } from "@/lib/models/providers";
-import type { Message, Model } from "@/lib/types";
-import { AUTO_MODEL_ID, MESSAGE_ROLE_USER, MESSAGE_ROLE_ASSISTANT } from "@/lib/constants";
-import Image from "next/image";
+import { useState, useEffect, useRef } from "react";
+import { Bot, User, ChevronDown, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type DemoScenario = {
-  question: string;
-  modelId: string;
-  modelName: string;
-  provider: string;
-  answer: string;
+type Message = {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  model?: string;
+  modelColor?: string;
 };
 
-// Fallback scenarios if API fails (ensuring unique models per scenario)
-const FALLBACK_SCENARIOS: DemoScenario[] = [
+type DemoStep = {
+  type: "user" | "assistant" | "switch";
+  content?: string;
+  model?: string;
+  modelColor?: string;
+};
+
+const MODELS = {
+  gpt4: { name: "GPT-4o", color: "text-emerald-600 dark:text-emerald-400" },
+  claude: { name: "Claude 3.5", color: "text-amber-600 dark:text-amber-400" },
+  gemini: { name: "Gemini Pro", color: "text-violet-600 dark:text-violet-400" },
+};
+
+const DEMO_SCRIPT: DemoStep[] = [
+  { type: "user", content: "Help me write a Python function to parse JSON" },
   {
-    question: "Explain async/await in JavaScript",
-    modelId: "openai/gpt-4o",
-    modelName: "GPT-4o",
-    provider: "OpenAI",
-    answer: "Async/await is syntactic sugar for Promises. The `async` keyword makes a function return a Promise, while `await` pauses execution until the Promise resolves. It makes asynchronous code look synchronous, improving readability."
+    type: "assistant",
+    content: "Here's a clean function to parse JSON safely:\n\n```python\nimport json\n\ndef parse_json(data: str) -> dict:\n    try:\n        return json.loads(data)\n    except json.JSONDecodeError:\n        return {}\n```",
+    model: "gpt4",
+    modelColor: MODELS.gpt4.color,
   },
+  { type: "user", content: "Now review it for edge cases" },
+  { type: "switch", model: "claude" },
   {
-    question: "Solve: If a train travels 120 km in 2 hours, and another train travels 180 km in 3 hours, which train is faster and by how much?",
-    modelId: "anthropic/claude-3.5-sonnet",
-    modelName: "Claude 3.5 Sonnet",
-    provider: "Anthropic",
-    answer: `<think>
-To solve this problem, I need to calculate the speed of each train and compare them.
-
-Train 1:
-- Distance: 120 km
-- Time: 2 hours
-- Speed = Distance / Time = 120 km / 2 hours = 60 km/h
-
-Train 2:
-- Distance: 180 km
-- Time: 3 hours
-- Speed = Distance / Time = 180 km / 3 hours = 60 km/h
-
-Both trains have the same speed of 60 km/h. Therefore, neither train is faster - they travel at the same speed.
-</think>
-
-Train 1 travels at 120 km ÷ 2 hours = **60 km/h**
-
-Train 2 travels at 180 km ÷ 3 hours = **60 km/h**
-
-Both trains travel at the same speed of 60 km/h, so neither is faster. They have identical speeds despite covering different distances.`
+    type: "assistant",
+    content: "Good start! Consider these improvements:\n\n1. Handle `None` input\n2. Add type hints for return\n3. Log errors for debugging\n4. Consider returning `Optional[dict]`",
+    model: "claude",
+    modelColor: MODELS.claude.color,
   },
+  { type: "user", content: "Summarize the key changes" },
+  { type: "switch", model: "gemini" },
   {
-    question: "Write a haiku about coding",
-    modelId: "google/gemini-pro",
-    modelName: "Gemini Pro",
-    provider: "Google",
-    answer: "Lines of logic flow,\nSyntax shapes the digital realm,\nCode becomes art form."
+    type: "assistant",
+    content: "Key improvements: null-safety, better typing, error logging, and explicit Optional return type for clearer API contracts.",
+    model: "gemini",
+    modelColor: MODELS.gemini.color,
   },
 ];
 
-type AnimationPhase = "question" | "model-switch" | "answer" | "pause";
-
-const fetcher = (url: string) => fetch(url).then((res) => res.json());
-
-/**
- * Select unique flagship models for each category
- */
-function selectUniqueFlagshipModels(models: Model[]): {
-  coding?: Model;
-  math?: Model;
-  general?: Model;
-  creative?: Model;
-} {
-  const flagshipModels = models.filter(m => m.flagship === true);
-  if (flagshipModels.length === 0) return {};
-
-  const usedModelIds = new Set<string>();
-  const selected: {
-    coding?: Model;
-    math?: Model;
-    general?: Model;
-    creative?: Model;
-  } = {};
-
-  // Define categories with their sorting functions
-  const categories = [
-    {
-      name: 'coding' as const,
-      sortBy: (m: Model) => m.codingIndex || 0,
-      getModel: () => selected.coding
-    },
-    {
-      name: 'math' as const,
-      sortBy: (m: Model) => m.mathIndex || 0,
-      getModel: () => selected.math
-    },
-    {
-      name: 'general' as const,
-      sortBy: (m: Model) => m.intelligenceIndex || 0,
-      getModel: () => selected.general
-    },
-    {
-      name: 'creative' as const,
-      sortBy: (m: Model) => {
-        const coding = m.codingIndex || 0;
-        const math = m.mathIndex || 0;
-        const intelligence = m.intelligenceIndex || 0;
-        return (coding + math + intelligence) / 3;
-      },
-      getModel: () => selected.creative
-    }
-  ];
-
-  // Select unique model for each category
-  for (const category of categories) {
-    const sorted = [...flagshipModels].sort((a, b) => category.sortBy(b) - category.sortBy(a));
-    const model = sorted.find(m => !usedModelIds.has(m.id));
-    if (model) {
-      selected[category.name] = model;
-      usedModelIds.add(model.id); // Prevent reuse
-    }
-  }
-
-  return selected;
+function TypingIndicator() {
+  return (
+    <div className="flex items-center gap-1 px-1">
+      <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-muted-foreground/60" style={{ animationDelay: "0ms" }} />
+      <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-muted-foreground/60" style={{ animationDelay: "150ms" }} />
+      <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-muted-foreground/60" style={{ animationDelay: "300ms" }} />
+    </div>
+  );
 }
 
-/**
- * Generate demo scenarios from selected models
- */
-function generateScenarios(selectedModels: {
-  coding?: Model;
-  math?: Model;
-  general?: Model;
-  creative?: Model;
-}): DemoScenario[] {
-  const scenarios: DemoScenario[] = [];
+function MessageBubble({ message, isTyping }: { message: Message; isTyping?: boolean }) {
+  const isUser = message.role === "user";
 
-  // Coding scenario
-  if (selectedModels.coding) {
-    scenarios.push({
-      question: "Explain async/await in JavaScript",
-      modelId: selectedModels.coding.id,
-      modelName: selectedModels.coding.name,
-      provider: selectedModels.coding.provider,
-      answer: "Async/await is syntactic sugar for Promises. The `async` keyword makes a function return a Promise, while `await` pauses execution until the Promise resolves. It makes asynchronous code look synchronous, improving readability and making error handling easier with try/catch blocks."
-    });
-  }
+  return (
+    <div className={cn("flex gap-3", isUser ? "flex-row-reverse" : "flex-row")}>
+      <div
+        className={cn(
+          "flex h-7 w-7 shrink-0 items-center justify-center rounded-full border",
+          isUser
+            ? "border-border bg-muted"
+            : "border-border bg-card"
+        )}
+      >
+        {isUser ? (
+          <User className="h-3.5 w-3.5 text-muted-foreground" />
+        ) : (
+          <Bot className={cn("h-3.5 w-3.5", message.modelColor || "text-muted-foreground")} />
+        )}
+      </div>
+      <div className={cn("flex max-w-[85%] flex-col gap-1", isUser ? "items-end" : "items-start")}>
+        {!isUser && message.model && (
+          <span className={cn("text-[10px] font-medium", message.modelColor)}>
+            {MODELS[message.model as keyof typeof MODELS]?.name}
+          </span>
+        )}
+        <div
+          className={cn(
+            "rounded-xl px-3 py-2 text-sm leading-relaxed",
+            isUser
+              ? "bg-primary text-primary-foreground"
+              : "bg-muted text-foreground"
+          )}
+        >
+          {isTyping ? <TypingIndicator /> : (
+            <span className="whitespace-pre-wrap">{message.content}</span>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
 
-  // Math scenario with thinking
-  if (selectedModels.math) {
-    scenarios.push({
-      question: "Solve: If a train travels 120 km in 2 hours, and another train travels 180 km in 3 hours, which train is faster and by how much?",
-      modelId: selectedModels.math.id,
-      modelName: selectedModels.math.name,
-      provider: selectedModels.math.provider,
-      answer: `<think>
-To solve this problem, I need to calculate the speed of each train and compare them.
+function ModelSwitchIndicator({ from, to }: { from: string; to: string }) {
+  const fromModel = MODELS[from as keyof typeof MODELS];
+  const toModel = MODELS[to as keyof typeof MODELS];
 
-Train 1:
-- Distance: 120 km
-- Time: 2 hours
-- Speed = Distance / Time = 120 km / 2 hours = 60 km/h
-
-Train 2:
-- Distance: 180 km
-- Time: 3 hours
-- Speed = Distance / Time = 180 km / 3 hours = 60 km/h
-
-Both trains have the same speed of 60 km/h. Therefore, neither train is faster - they travel at the same speed.
-</think>
-
-Train 1 travels at 120 km ÷ 2 hours = **60 km/h**
-
-Train 2 travels at 180 km ÷ 3 hours = **60 km/h**
-
-Both trains travel at the same speed of 60 km/h, so neither is faster. They have identical speeds despite covering different distances.`
-    });
-  }
-
-  // General scenario
-  if (selectedModels.general) {
-    scenarios.push({
-      question: "Compare React and Vue.js",
-      modelId: selectedModels.general.id,
-      modelName: selectedModels.general.name,
-      provider: selectedModels.general.provider,
-      answer: "React uses a virtual DOM and JSX, emphasizing component composition. Vue.js offers a template-based approach with a more gradual learning curve. React has a larger ecosystem, while Vue provides better out-of-the-box tooling. Both are excellent choices depending on team preferences."
-    });
-  }
-
-  // Creative scenario
-  if (selectedModels.creative) {
-    scenarios.push({
-      question: "Write a haiku about coding",
-      modelId: selectedModels.creative.id,
-      modelName: selectedModels.creative.name,
-      provider: selectedModels.creative.provider,
-      answer: "Lines of logic flow,\nSyntax shapes the digital realm,\nCode becomes art form."
-    });
-  }
-
-  // If no scenarios generated, return at least one fallback
-  if (scenarios.length === 0) {
-    return [FALLBACK_SCENARIOS[0]];
-  }
-
-  return scenarios;
+  return (
+    <div className="flex items-center justify-center gap-2 py-2">
+      <div className="flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 text-xs">
+        <span className={cn("font-medium", fromModel?.color)}>{fromModel?.name}</span>
+        <ArrowRight className="h-3 w-3 text-muted-foreground" />
+        <span className={cn("font-medium", toModel?.color)}>{toModel?.name}</span>
+      </div>
+    </div>
+  );
 }
 
 export function ChatDemo() {
-  const [scenarioIndex, setScenarioIndex] = useState(0);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [selectedModel, setSelectedModel] = useState(AUTO_MODEL_ID);
-  const [phase, setPhase] = useState<AnimationPhase>("question");
+  const [currentModel, setCurrentModel] = useState("gpt4");
+  const [stepIndex, setStepIndex] = useState(0);
+  const [isTyping, setIsTyping] = useState(false);
+  const [showSwitch, setShowSwitch] = useState<{ from: string; to: string } | null>(null);
   const [isInView, setIsInView] = useState(false);
-  const [isModelSwitching, setIsModelSwitching] = useState(false);
-  const typingCleanupRef = useRef<(() => void) | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const lastAssistantMessageIdRef = useRef<string | null>(null);
-  const typeTextRef = useRef<((text: string, messageId: string, speed?: number) => () => void) | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Fetch models from API
-  const { data: modelsData, error: modelsError } = useSWR<{ models: Model[] }>("/api/models", fetcher);
-  const availableModels = modelsData?.models || [];
-
-  // Generate scenarios from flagship models
-  const demoScenarios = useMemo(() => {
-    if (availableModels.length > 0) {
-      const selectedModels = selectUniqueFlagshipModels(availableModels);
-      const scenarios = generateScenarios(selectedModels);
-      if (scenarios.length > 0) {
-        return scenarios;
-      }
-    }
-    // Fallback to hardcoded scenarios
-    return FALLBACK_SCENARIOS;
-  }, [availableModels]);
-
-  const currentScenario = demoScenarios[scenarioIndex % demoScenarios.length];
-
-  // Intersection Observer to detect when component is in view
+  // Intersection observer
   useEffect(() => {
     const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          setIsInView(entry.isIntersecting);
-        });
-      },
-      { threshold: 0.3, rootMargin: "0px" }
+      (entries) => setIsInView(entries[0]?.isIntersecting ?? false),
+      { threshold: 0.3 }
     );
-
-    if (containerRef.current) {
-      observer.observe(containerRef.current);
-    }
-
-    return () => {
-      if (containerRef.current) {
-        observer.unobserve(containerRef.current);
-      }
-    };
+    if (containerRef.current) observer.observe(containerRef.current);
+    return () => observer.disconnect();
   }, []);
 
-  const typeText = useCallback((text: string, messageId: string, speed: number = 30) => {
-    let index = 0;
-    const interval = setInterval(() => {
-      if (index < text.length) {
-        setMessages(prev => prev.map(msg => 
-          msg.id === messageId 
-            ? { ...msg, content: text.slice(0, index + 1), isStreaming: true }
-            : msg
-        ));
-        index++;
-      } else {
-        setMessages(prev => prev.map(msg => 
-          msg.id === messageId 
-            ? { ...msg, isStreaming: false }
-            : msg
-        ));
-        clearInterval(interval);
-      }
-    }, speed);
-    return () => {
-      clearInterval(interval);
-    };
-  }, []);
-
-  // Keep typeTextRef up to date
-  typeTextRef.current = typeText;
-
+  // Auto-scroll
   useEffect(() => {
-    if (!isInView || demoScenarios.length === 0) return;
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, isTyping, showSwitch]);
 
-    let timeoutId: NodeJS.Timeout;
+  // Animation loop
+  useEffect(() => {
+    if (!isInView) return;
 
-    const runAnimation = () => {
-      if (typingCleanupRef.current) {
-        typingCleanupRef.current();
-        typingCleanupRef.current = null;
-      }
-
-      switch (phase) {
-        case "question":
-          // Add user message
-          const userMessageId = `user-${Date.now()}`;
-          const now = Date.now();
-          setMessages(prev => {
-            if (prev.some(msg => msg.id === userMessageId)) {
-              return prev;
-            }
-            const newMessages: Message[] = [...prev, {
-              id: userMessageId,
-              role: MESSAGE_ROLE_USER,
-              content: "",
-              createdAt: now,
-              isStreaming: true
-            }];
-            // Keep only last 8 messages (4 Q&A pairs)
-            return newMessages.slice(-8);
-          });
-          if (!typeTextRef.current) {
-            return;
-          }
-          typingCleanupRef.current = typeTextRef.current(currentScenario.question, userMessageId, 50);
-          timeoutId = setTimeout(() => {
-            setPhase("model-switch");
-          }, currentScenario.question.length * 50 + 300);
-          break;
-
-        case "model-switch":
-          // Animate model switch
-          setIsModelSwitching(true);
-          setSelectedModel(currentScenario.modelId);
-          
-          // Add assistant message placeholder
-          const assistantMessageId = `assistant-${Date.now()}`;
-          lastAssistantMessageIdRef.current = assistantMessageId;
-          const assistantNow = Date.now();
-          setMessages(prev => {
-            if (prev.some(msg => msg.id === assistantMessageId)) {
-              return prev;
-            }
-            const newMessages: Message[] = [...prev, {
-              id: assistantMessageId,
-              role: MESSAGE_ROLE_ASSISTANT,
-              content: "",
-              createdAt: assistantNow,
-              model: currentScenario.modelId,
-              isStreaming: true
-            }];
-            return newMessages.slice(-8);
-          });
-          
-          setTimeout(() => {
-            setIsModelSwitching(false);
-          }, 600);
-          
-          timeoutId = setTimeout(() => {
-            setPhase("answer");
-          }, 600);
-          break;
-
-        case "answer":
-          if (lastAssistantMessageIdRef.current) {
-            if (!typeTextRef.current) {
-              return;
-            }
-            typingCleanupRef.current = typeTextRef.current(currentScenario.answer, lastAssistantMessageIdRef.current, 25);
-            const answerDuration = currentScenario.answer.length * 25;
-            timeoutId = setTimeout(() => {
-              setPhase("pause");
-            }, answerDuration + 500);
-          }
-          break;
-
-        case "pause":
-          timeoutId = setTimeout(() => {
-            setScenarioIndex((prev) => (prev + 1) % demoScenarios.length);
-            setPhase("question");
-          }, 2500);
-          break;
-      }
-    };
-
-    runAnimation();
-
-    return () => {
-      clearTimeout(timeoutId);
-      if (typingCleanupRef.current) {
-        typingCleanupRef.current();
-        typingCleanupRef.current = null;
-      }
-    };
-  }, [phase, scenarioIndex, currentScenario, isInView, demoScenarios.length]);
-
-  // Get provider icon for messages
-  const getProviderIcon = useCallback((message: Message) => {
-    if (message.role === MESSAGE_ROLE_USER || !message.model) return undefined;
-
-    const model = availableModels.find(m => m.id === message.model);
-    if (!model) return undefined;
-
-    const config = getProviderConfig(model.provider);
-    const Icon = config.icon;
-
-    if (config.logoUrl) {
-      return (
-        <Image
-          src={config.logoUrl}
-          alt={config.displayName}
-          width={14}
-          height={14}
-          className="object-contain"
-          unoptimized
-        />
-      );
+    const step = DEMO_SCRIPT[stepIndex];
+    if (!step) {
+      // Reset after pause
+      const timeout = setTimeout(() => {
+        setMessages([]);
+        setCurrentModel("gpt4");
+        setStepIndex(0);
+        setShowSwitch(null);
+      }, 3000);
+      return () => clearTimeout(timeout);
     }
 
-    return <Icon className={cn("h-4 w-4", config.color)} />;
-  }, [availableModels]);
+    let timeout: NodeJS.Timeout;
+
+    if (step.type === "switch") {
+      setShowSwitch({ from: currentModel, to: step.model! });
+      timeout = setTimeout(() => {
+        setCurrentModel(step.model!);
+        setShowSwitch(null);
+        setStepIndex((i) => i + 1);
+      }, 1200);
+    } else if (step.type === "user") {
+      timeout = setTimeout(() => {
+        setMessages((prev) => [
+          ...prev,
+          { id: `msg-${stepIndex}`, role: "user", content: step.content! },
+        ]);
+        setStepIndex((i) => i + 1);
+      }, 800);
+    } else if (step.type === "assistant") {
+      setIsTyping(true);
+      setMessages((prev) => [
+        ...prev,
+        { id: `msg-${stepIndex}`, role: "assistant", content: "", model: step.model, modelColor: step.modelColor },
+      ]);
+
+      timeout = setTimeout(() => {
+        setIsTyping(false);
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === `msg-${stepIndex}` ? { ...m, content: step.content! } : m
+          )
+        );
+        setStepIndex((i) => i + 1);
+      }, 1500);
+    }
+
+    return () => clearTimeout(timeout);
+  }, [stepIndex, isInView, currentModel]);
 
   return (
-    <div ref={containerRef} className="h-full w-full flex flex-col relative overflow-hidden bg-background">
+    <div ref={containerRef} className="flex h-full flex-col bg-background">
       {/* Header */}
-      <div className="flex items-center justify-between gap-4 px-4 py-3 border-b border-border/30 bg-background/50 backdrop-blur-sm z-10">
+      <div className="flex items-center justify-between border-b border-border px-4 py-2.5">
         <div className="flex items-center gap-2">
-           <ModelSelector
-              selectedModelId={selectedModel}
-              onModelChange={() => {}}
-            />
+          <Bot className={cn("h-4 w-4", MODELS[currentModel as keyof typeof MODELS]?.color)} />
+          <span className="text-sm font-medium text-foreground">
+            {MODELS[currentModel as keyof typeof MODELS]?.name}
+          </span>
+          <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+        </div>
+        <div className="flex items-center gap-1">
+          <span className="h-2 w-2 rounded-full bg-emerald-500" />
+          <span className="text-[10px] text-muted-foreground">Live</span>
         </div>
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto min-h-0 scrollbar-hide pb-24">
-         <div className="max-w-3xl mx-auto w-full h-full flex flex-col pt-4">
-            <MessageList 
-              className="pb-4"
-              messages={messages}
-              availableModels={availableModels}
-              getProviderIcon={getProviderIcon}
+      <div className="flex-1 overflow-y-auto px-4 py-4">
+        <div className="space-y-4">
+          {messages.map((message, index) => (
+            <MessageBubble
+              key={message.id}
+              message={message}
+              isTyping={isTyping && index === messages.length - 1 && message.role === "assistant"}
             />
-         </div>
+          ))}
+          {showSwitch && <ModelSwitchIndicator from={showSwitch.from} to={showSwitch.to} />}
+          <div ref={messagesEndRef} />
+        </div>
       </div>
 
-      {/* Message Composer - Absolute Bottom */}
-      <div className="absolute bottom-0 left-0 right-0 z-20">
-         <MessageComposer
-            onSend={() => {}}
-            placeholder="Message Trew..."
-            disabled={true}
-            className="bg-transparent border-t-0"
-         />
+      {/* Input (decorative) */}
+      <div className="border-t border-border px-4 py-3">
+        <div className="flex items-center gap-3 rounded-lg border border-border bg-muted/30 px-3 py-2">
+          <span className="flex-1 text-sm text-muted-foreground">Message Trew...</span>
+          <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary/10">
+            <ArrowRight className="h-3.5 w-3.5 text-primary" />
+          </div>
+        </div>
       </div>
     </div>
   );

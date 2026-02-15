@@ -1,5 +1,3 @@
-"use client";
-
 import Link from "next/link";
 import { Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -14,13 +12,13 @@ const pillars = [
 
 export function Hero({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
   return (
-    <section className="px-4 pb-16 pt-14 sm:px-6 sm:pb-20 sm:pt-16 lg:px-10 lg:pb-24 lg:pt-20">
+    <section className="px-4 py-16 sm:px-6 sm:py-20 lg:px-10 lg:py-24">
       <div className="mx-auto max-w-7xl">
         <div className="grid items-start gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(560px,0.95fr)] lg:gap-12">
           <div className="space-y-8">
             <div className="space-y-5">
               <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">Trew</p>
-              <h1 className="max-w-2xl text-4xl font-semibold leading-[1.02] tracking-[-0.03em] sm:text-5xl lg:text-6xl">
+              <h1 className="max-w-2xl text-4xl font-semibold leading-[1.02] tracking-[-0.025em] sm:text-5xl lg:text-6xl">
                 One plan for every leading model.
               </h1>
               <p className="max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">

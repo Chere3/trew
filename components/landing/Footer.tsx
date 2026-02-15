@@ -3,13 +3,13 @@ import { Button } from "@/components/ui/button";
 
 export function Footer() {
   return (
-    <footer className="border-t border-border px-4 py-12 sm:px-6 sm:py-14 lg:px-10">
+    <footer className="border-t border-border px-4 py-16 sm:px-6 sm:py-20 lg:px-10 lg:py-24">
       <div className="mx-auto max-w-7xl space-y-8">
         <div className="rounded-2xl border border-border bg-card p-6 sm:p-8">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
             <div className="space-y-2">
               <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">Trew</p>
-              <h3 className="text-2xl font-semibold tracking-[-0.02em] sm:text-3xl">One plan. All models. Continuous context.</h3>
+              <h3 className="text-2xl font-semibold tracking-[-0.025em] sm:text-3xl">One plan. All models. Continuous context.</h3>
               <p className="max-w-xl text-sm leading-relaxed text-muted-foreground sm:text-base">
                 Stop managing stacked subscriptions. Work across providers in one stable, consistent environment.
               </p>

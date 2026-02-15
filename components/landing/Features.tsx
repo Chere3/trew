@@ -201,7 +201,7 @@ const features: Feature[] = [
 
 export function Features() {
   return (
-    <section id="features" className="px-4 py-16 sm:px-6 sm:py-20 lg:px-10">
+    <section id="features" className="px-4 py-16 sm:px-6 sm:py-20 lg:px-10 lg:py-24">
       <div className="mx-auto max-w-7xl space-y-12">
         <div className="grid gap-4 lg:grid-cols-[1fr_1fr] lg:items-end">
           <div className="space-y-3">
