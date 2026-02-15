@@ -116,7 +116,7 @@ function TestimonialCard({ testimonial }: { testimonial: Testimonial }) {
       <CardContent className="relative p-6 flex flex-col h-full">
         {/* Quote Mark and Star Rating */}
         <div className="mb-4 flex items-start justify-between">
-          <div className="text-5xl font-serif leading-none text-primary/20 select-none">"</div>
+          <div className="text-5xl font-serif leading-none text-primary/20 select-none">&quot;</div>
           <div className="flex items-center gap-0.5">
             {Array.from({ length: 5 }).map((_, i) => (
               <Star

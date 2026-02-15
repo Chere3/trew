@@ -68,7 +68,6 @@ export function MessageList({
   const measureRowRef = useCallback(
     (el: HTMLDivElement | null) => {
       try {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         ;(virtualizer as any).measureElement?.(el)
       } catch {}
 
@@ -84,7 +83,6 @@ export function MessageList({
           sizeCacheRef.current.set(msgId, height)
           try {
             // Recompute layout using updated estimateSize cache
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             ;(virtualizer as any).measure?.()
           } catch {}
         }
@@ -215,7 +213,6 @@ export function MessageList({
       requestAnimationFrame(() => {
         try {
           // @tanstack/react-virtual exposes measure() to recompute item sizes for rendered elements.
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           ;(virtualizer as any).measure?.()
         } catch {}
       })
@@ -273,7 +270,6 @@ export function MessageList({
         requestAnimationFrame(() => {
           requestAnimationFrame(() => {
             try {
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               ;(virtualizer as any)?.measure?.()
             } catch {}
             try {
@@ -300,7 +296,6 @@ export function MessageList({
         requestAnimationFrame(() => {
           requestAnimationFrame(() => {
             try {
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               ;(virtualizer as any)?.measure?.()
             } catch {}
             try {

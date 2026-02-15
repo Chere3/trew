@@ -68,8 +68,8 @@ export default function NotFound() {
 
             {/* Description */}
             <p className="text-base sm:text-lg text-muted-foreground mb-8 max-w-md mx-auto leading-relaxed">
-              The page you're looking for seems to have taken a wrong turn. 
-              Don't worry, even the best AI models get lost sometimes!
+              The page you&apos;re looking for seems to have taken a wrong turn.
+              Don&apos;t worry, even the best AI models get lost sometimes!
             </p>
 
             {/* Action buttons */}
