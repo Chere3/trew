@@ -4,7 +4,6 @@ import { ShieldCheck, Star } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
-import { Carousel } from "@/components/ui/carousel";
 import { cn } from "@/lib/utils";
 
 type Testimonial = {
@@ -16,7 +15,7 @@ type Testimonial = {
   rating: number;
   avatarImage: string;
   highlight?: string;
-  accent?: "blue" | "emerald" | "violet" | "amber";
+  accent?: "emerald" | "violet" | "amber" | "rose";
 };
 
 const testimonials: Testimonial[] = [
@@ -44,7 +43,7 @@ const testimonials: Testimonial[] = [
     avatarImage:
       "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=faces",
     highlight: "Replace 3 subscriptions",
-    accent: "blue",
+    accent: "rose",
   },
   {
     quote:
@@ -83,7 +82,7 @@ const testimonials: Testimonial[] = [
     avatarImage:
       "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=faces",
     highlight: "No context loss",
-    accent: "blue",
+    accent: "rose",
   },
   {
     quote:
@@ -119,10 +118,10 @@ function Stars({ rating, className }: { rating: number; className?: string }) {
 }
 
 const accentRail: Record<NonNullable<Testimonial["accent"]>, string> = {
-  blue: "bg-blue-500",
   emerald: "bg-emerald-500",
   violet: "bg-violet-500",
   amber: "bg-amber-500",
+  rose: "bg-rose-500",
 };
 
 function ReviewCard({ testimonial, featured = false }: { testimonial: Testimonial; featured?: boolean }) {
