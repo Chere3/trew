@@ -308,6 +308,8 @@ export function ChatDemo() {
     return () => clearTimeout(timeout);
   }, [stepIndex, isInView, currentModelIndex]);
 
+  const visibleMessages = messages.slice(-4);
+
   return (
     <div
       ref={containerRef}
@@ -332,11 +334,7 @@ export function ChatDemo() {
       {/* Messages */}
       <div className="flex-1 overflow-hidden px-4 py-4">
         <div className="flex h-full flex-col justify-end space-y-4">
-          {isThinking ? (
-            <ThinkingCollapsible content={thinkingText} isStreaming />
-          ) : null}
-
-          {messages.map((message, index) => (
+          {visibleMessages.map((message, index) => (
             <MessageBubble
               key={message.id}
               message={message}
@@ -345,10 +343,13 @@ export function ChatDemo() {
                   ? demoModels[resolveStepModelIndex(message.model)]?.name
                   : undefined
               }
-              isTyping={isTyping && index === messages.length - 1 && message.role === "assistant"}
+              isTyping={isTyping && index === visibleMessages.length - 1 && message.role === "assistant"}
             />
           ))}
+
           {showSwitch && <ModelSwitchIndicator from={showSwitch.from} to={showSwitch.to} models={demoModels} />}
+
+          {isThinking ? <ThinkingCollapsible content={thinkingText} isStreaming /> : null}
         </div>
       </div>
 
