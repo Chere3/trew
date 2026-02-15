@@ -61,7 +61,7 @@ export async function POST(
     }
 
     const userId = session.user.id;
-    let { model } = await req.json();
+    const { model } = await req.json();
 
     // Verify chat ownership
     const chat = db

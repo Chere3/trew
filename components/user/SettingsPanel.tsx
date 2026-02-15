@@ -183,7 +183,7 @@ export function SettingsPanel({ className, hideHeader = false }: SettingsPanelPr
                   <div className="space-y-2">
                     <Label>Theme</Label>
                     <p className="text-sm text-muted-foreground mb-3">
-                      Choose your preferred theme. Select "System" to follow your device's theme setting.
+                      Choose your preferred theme. Select &quot;System&quot; to follow your device&apos;s theme setting.
                     </p>
                     <ThemeToggle variant="dropdown" />
                   </div>

@@ -444,7 +444,7 @@ export function Pricing() {
                 Compare plans
               </h2>
               <p className="mt-4 text-lg text-muted-foreground">
-                See exactly what's included in each plan
+                See exactly what&apos;s included in each plan
               </p>
             </div>
 

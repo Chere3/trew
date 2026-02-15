@@ -69,6 +69,7 @@
     "clsx": "^2.1.1",
     "eslint": "^9",
     "eslint-config-next": "16.1.3",
+    "eslint-plugin-react-hooks": "5.2.0",
     "eslint-plugin-storybook": "^0.11.2",
     "lucide-react": "^0.562.0",
     "playwright": "^1.57.0",
@@ -87,5 +88,8 @@
     "sharp",
     "unrs-resolver",
     "better-sqlite3"
-  ]
+  ],
+  "resolutions": {
+    "eslint-plugin-react-hooks": "5.2.0"
+  }
 }

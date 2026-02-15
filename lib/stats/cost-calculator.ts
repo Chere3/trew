@@ -11,7 +11,7 @@ export interface ModelPricing {
 /**
  * Cache for model pricing to avoid repeated API calls
  */
-let pricingCache: Map<string, { pricing: ModelPricing; timestamp: number }> = new Map();
+const pricingCache: Map<string, { pricing: ModelPricing; timestamp: number }> = new Map();
 const CACHE_TTL = 60 * 60 * 1000; // 1 hour
 
 /**
