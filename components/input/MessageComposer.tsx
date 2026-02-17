@@ -157,7 +157,12 @@ export function MessageComposer({
   }
 
   return (
-    <div className={cn('bg-transparent p-4 pb-6', className)}>
+    <div
+      className={cn(
+        'bg-transparent p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:pb-6',
+        className
+      )}
+    >
       <div className="max-w-3xl mx-auto bg-background/80 backdrop-blur-sm border border-border/50 rounded-2xl p-4 shadow-sm">
         {files.length > 0 && (
           <div className="flex gap-2 overflow-x-auto pb-4 mb-2 scrollbar-hide">
@@ -214,7 +219,7 @@ export function MessageComposer({
               placeholder={placeholder}
               disabled={disabled}
               rows={1}
-              className="min-h-[44px] max-h-[200px] resize-none pr-20 rounded-xl border-primary/20 focus-visible:border-primary/40 bg-transparent"
+              className="min-h-[52px] sm:min-h-[44px] max-h-[240px] resize-none pr-20 rounded-xl border-primary/20 focus-visible:border-primary/40 bg-transparent text-base sm:text-sm"
               autoFocus={autoFocus}
             />
             <div className="absolute right-2 bottom-2 flex gap-1">
@@ -223,7 +228,7 @@ export function MessageComposer({
                 variant="ghost"
                 size="sm"
                 onClick={triggerFileSelect}
-                className="h-7 w-7 p-0"
+                className="h-9 w-9 sm:h-7 sm:w-7 p-0"
               >
                 <Paperclip className="h-4 w-4" />
               </Button>
@@ -233,7 +238,7 @@ export function MessageComposer({
                   variant="ghost"
                   size="sm"
                   onClick={onVoiceInput}
-                  className="h-7 w-7 p-0"
+                  className="h-9 w-9 sm:h-7 sm:w-7 p-0"
                 >
                   <Mic className="h-4 w-4" />
                 </Button>
@@ -243,7 +248,7 @@ export function MessageComposer({
                   type="button"
                   variant="ghost"
                   size="sm"
-                  className="h-7 w-7 p-0"
+                  className="h-9 w-9 sm:h-7 sm:w-7 p-0"
                   aria-label="Open emoji picker"
                 >
                   <Smile className="h-4 w-4" />
@@ -255,7 +260,7 @@ export function MessageComposer({
             onClick={handleSend}
             disabled={(!message.trim() && files.length === 0) || disabled}
             size="icon"
-            className="h-11 w-11 shrink-0 rounded-xl"
+            className="h-12 w-12 sm:h-11 sm:w-11 shrink-0 rounded-xl"
           >
             <Send className="h-4 w-4" />
           </Button>

@@ -223,9 +223,10 @@ export function ModelSelector({
             <Button
               variant="ghost"
               className={cn(
-                "flex items-center gap-2 h-auto py-1.5 px-3",
+                // Mobile-first: 44px+ tap target
+                "flex items-center gap-2 h-11 sm:h-auto py-0 sm:py-1.5 px-4 sm:px-3",
                 "rounded-md border border-border bg-background",
-                "text-xs font-medium text-foreground",
+                "text-sm sm:text-xs font-medium text-foreground",
                 "hover:bg-muted/50 hover:text-foreground",
                 "transition-all duration-200",
                 open && "bg-muted/50"
@@ -238,19 +239,19 @@ export function ModelSelector({
                   <Image
                     src={selectedModelProviderConfig.logoUrl}
                     alt={`${selectedModelProviderConfig.displayName} logo`}
-                    width={14}
-                    height={14}
+                    width={16}
+                    height={16}
                     className="object-contain"
                     unoptimized
                   />
                 ) : (
-                  <SelectedIcon className="h-3.5 w-3.5 text-primary" />
+                  <SelectedIcon className="h-4 w-4 sm:h-3.5 sm:w-3.5 text-primary" />
                 )}
                 <span>{selectedModel.name}</span>
               </div>
               <ChevronDown
                 className={cn(
-                  "h-3 w-3 text-muted-foreground/70 transition-transform duration-200 ml-1",
+                  "h-4 w-4 sm:h-3 sm:w-3 text-muted-foreground/70 transition-transform duration-200 ml-1",
                   open && "rotate-180"
                 )}
               />
@@ -258,7 +259,8 @@ export function ModelSelector({
           </PopoverTrigger>
           <PopoverContent
             className={cn(
-              "w-[640px] overflow-hidden rounded-lg border border-border bg-card p-0 shadow-lg"
+              "w-[calc(100vw-2rem)] sm:w-[640px]",
+              "overflow-hidden rounded-lg border border-border bg-card p-0 shadow-lg"
             )}
             align="center"
             sideOffset={8}

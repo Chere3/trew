@@ -7,6 +7,11 @@ import { ChatInterface } from "@/app/(dashboard)/chat/ChatInterface";
 export const metadata: Metadata = {
   title: "Chat - Trew",
   description: "Chat with AI models",
+  viewport: {
+    width: "device-width",
+    initialScale: 1,
+    viewportFit: "cover",
+  },
 };
 
 export default async function ChatLayout({
