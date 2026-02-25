@@ -28,8 +28,16 @@ bun run dev
 
 ```bash
 bun run lint
-bun run test
+bun run typecheck
+bun run test --run
 bun run test:coverage
+bun run build
+```
+
+Or run the full gate:
+
+```bash
+bun run check
 ```
 
 ### 4) Run Storybook
@@ -63,7 +71,9 @@ Fill in values according to your auth/database setup.
 ## Documentation
 
 - Getting started: `docs/GETTING_STARTED.md`
-- Architecture notes: `docs/ARCHITECTURE.md` (create/update as system grows)
+- Architecture notes: `docs/ARCHITECTURE.md`
+- Component standards: `docs/COMPONENT_GUIDELINES.md`
+- Database migrations: `docs/DATABASE_MIGRATIONS.md`
 - Product roadmap: `ROADMAP.md`
 
 ## Contributing
