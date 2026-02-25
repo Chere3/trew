@@ -2,9 +2,9 @@
 
 ## Quick wins (1-2 weeks)
 
-- [ ] Add `docs/ARCHITECTURE.md` with module boundaries and data-flow diagrams.
+- [x] Add `docs/ARCHITECTURE.md` with module boundaries and data-flow diagrams.
 - [ ] Add `pnpm` compatibility note or enforce Bun-only in docs/tooling.
-- [ ] Add CI workflow for `lint + test + build` on PRs.
+- [x] Add CI workflow for `lint + test + build` on PRs.
 - [ ] Add `.env.example` with all required runtime vars.
 - [ ] Add smoke E2E check (Playwright) for core chat happy-path.
 
