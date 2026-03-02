@@ -4,22 +4,18 @@ import { LoadingState } from './LoadingState'
 
 describe('LoadingState', () => {
   it('renders spinner variant', () => {
-    render(<LoadingState variant="spinner" />)
-    // Check for loading indicator
-    const container = screen.getByRole('generic')
-    expect(container).toBeInTheDocument()
+    const { container } = render(<LoadingState variant="spinner" />)
+    expect(container.firstChild).toBeInTheDocument()
   })
 
   it('renders skeleton variant', () => {
-    render(<LoadingState variant="skeleton" />)
-    const container = screen.getByRole('generic')
-    expect(container).toBeInTheDocument()
+    const { container } = render(<LoadingState variant="skeleton" />)
+    expect(container.firstChild).toBeInTheDocument()
   })
 
   it('renders dots variant', () => {
-    render(<LoadingState variant="dots" />)
-    const container = screen.getByRole('generic')
-    expect(container).toBeInTheDocument()
+    const { container } = render(<LoadingState variant="dots" />)
+    expect(container.firstChild).toBeInTheDocument()
   })
 
   it('displays message when provided', () => {

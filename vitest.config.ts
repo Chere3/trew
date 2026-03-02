@@ -34,6 +34,11 @@ export default defineConfig({
       },
       {
         // Regular component tests
+        resolve: {
+          alias: {
+            '@': path.resolve(dirname, './'),
+          },
+        },
         test: {
           name: 'components',
           environment: 'jsdom',
