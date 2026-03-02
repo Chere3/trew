@@ -24,7 +24,7 @@ describe('MessageComposer', () => {
     const textarea = screen.getByPlaceholderText('Type your message...')
     await user.type(textarea, 'Test message')
     await user.keyboard('{Enter}')
-    expect(handleSend).toHaveBeenCalledWith('Test message')
+    expect(handleSend).toHaveBeenCalledWith('Test message', [])
   })
 
   it('does not send empty message', async () => {
@@ -40,7 +40,7 @@ describe('MessageComposer', () => {
   it('respects maxLength', async () => {
     const user = userEvent.setup()
     render(<MessageComposer maxLength={10} />)
-    const textarea = screen.getByPlaceholderText('Type your message...')
+    const textarea = screen.getByPlaceholderText('Type your message...') as HTMLTextAreaElement
     await user.type(textarea, 'This is too long')
     expect(textarea.value.length).toBeLessThanOrEqual(10)
   })
