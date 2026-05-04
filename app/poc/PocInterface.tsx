@@ -25,12 +25,13 @@ import {
   Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useSession } from "@/lib/auth-client";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
-import { API_ENDPOINTS, AUTO_MODEL_ID } from "@/lib/constants";
+import { API_ENDPOINTS } from "@/lib/constants";
 import { getProviderConfig } from "@/lib/models/providers";
 import type { Model, AutorouteResult } from "@/lib/types";
+
+const POC_AUTOROUTE_ENDPOINT = "/api/poc/autoroute";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
@@ -90,7 +91,6 @@ const QUICK_ACTIONS: QuickAction[] = [
 ];
 
 export function PocInterface() {
-  const { data: session } = useSession();
   const [collapsed, setCollapsed] = useState(false);
   const [openSections, setOpenSections] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(SIDEBAR_SECTIONS.map((s) => [s.id, !!s.defaultOpen]))
@@ -120,7 +120,7 @@ export function PocInterface() {
     setRouting(true);
     setRouteError(null);
     try {
-      const res = await fetch(API_ENDPOINTS.AUTOROUTE, {
+      const res = await fetch(POC_AUTOROUTE_ENDPOINT, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ prompt: trimmed }),
@@ -165,13 +165,7 @@ export function PocInterface() {
     await routePrompt(prompt);
   };
 
-  const userInitials =
-    session?.user?.name
-      ?.split(" ")
-      .map((n) => n[0])
-      .join("")
-      .slice(0, 2)
-      .toUpperCase() || "U";
+  const userInitials = "U";
 
   return (
     <div className="flex h-[100dvh] w-full overflow-hidden bg-[#0d0f12] text-zinc-100">
@@ -271,7 +265,6 @@ export function PocInterface() {
               Feedback
             </Button>
             <Avatar className="h-8 w-8 ring-1 ring-white/10">
-              <AvatarImage src={session?.user?.image ?? undefined} alt="" />
               <AvatarFallback className="bg-amber-500/80 text-[11px] font-semibold text-black">
                 {userInitials}
               </AvatarFallback>
