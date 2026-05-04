@@ -168,11 +168,11 @@ export function PocInterface() {
   const userInitials = "U";
 
   return (
-    <div className="flex h-[100dvh] w-full overflow-hidden bg-[#0d0f12] text-zinc-100">
+    <div className="flex h-[100dvh] w-full overflow-hidden bg-[#0d0d0d] text-zinc-100">
       {/* Sidebar */}
       <aside
         className={cn(
-          "flex h-full shrink-0 flex-col border-r border-white/5 bg-[#0d0f12] transition-[width] duration-200",
+          "flex h-full shrink-0 flex-col border-r border-white/5 bg-[#0d0d0d] transition-[width] duration-200",
           collapsed ? "w-0 overflow-hidden" : "w-[300px]"
         )}
       >
@@ -188,7 +188,7 @@ export function PocInterface() {
           </Button>
           <Button
             variant="default"
-            className="ml-auto h-10 gap-2 rounded-full bg-fuchsia-700 px-4 text-sm font-medium text-white hover:bg-fuchsia-600"
+            className="ml-auto h-10 gap-2 rounded-full bg-[#8b1d4a] px-4 text-sm font-medium text-white hover:bg-[#a02257]"
             onClick={() => {
               setPrompt("");
               setRouteResult(null);
@@ -276,8 +276,8 @@ export function PocInterface() {
         <main className="flex flex-1 flex-col items-center justify-center px-4">
           <div className="flex w-full max-w-3xl flex-col items-center">
             {/* Logo tile */}
-            <div className="mb-5 flex h-16 w-16 items-center justify-center overflow-hidden rounded-xl bg-fuchsia-600/15 ring-1 ring-fuchsia-500/30">
-              <Wand2 className="h-7 w-7 text-fuchsia-400" />
+            <div className="mb-5 flex h-16 w-16 items-center justify-center overflow-hidden rounded-xl bg-[#8b1d4a]/20 ring-1 ring-[#8b1d4a]/40">
+              <Wand2 className="h-7 w-7 text-[#d63384]" />
             </div>
 
             <h1 className="flex items-center gap-3 text-5xl font-semibold tracking-tight text-zinc-50">
@@ -295,7 +295,7 @@ export function PocInterface() {
             {/* Composer */}
             <form
               onSubmit={handleSubmit}
-              className="mt-10 w-full rounded-2xl border border-white/10 bg-[#1a1c20] shadow-lg"
+              className="mt-10 w-full rounded-2xl border border-white/10 bg-[#1c1c1c] shadow-lg"
             >
               <textarea
                 value={prompt}
@@ -345,7 +345,7 @@ export function PocInterface() {
                   <button
                     type="submit"
                     disabled={!prompt.trim() || routing}
-                    className="flex h-9 w-9 items-center justify-center rounded-full bg-fuchsia-700 text-white transition hover:bg-fuchsia-600 disabled:opacity-40"
+                    className="flex h-9 w-9 items-center justify-center rounded-full bg-[#8b1d4a] text-white transition hover:bg-[#a02257] disabled:opacity-40"
                     aria-label="Send"
                   >
                     {routing ? (
@@ -376,7 +376,7 @@ export function PocInterface() {
                     key={q.id}
                     type="button"
                     onClick={() => handleQuickAction(q)}
-                    className="flex h-10 items-center gap-2 rounded-full border border-white/10 bg-[#1a1c20] px-5 text-sm text-zinc-200 transition hover:border-white/20 hover:bg-[#22252b]"
+                    className="flex h-10 items-center gap-2 rounded-full border border-white/10 bg-[#1c1c1c] px-5 text-sm text-zinc-200 transition hover:border-white/20 hover:bg-[#2a2a2a]"
                   >
                     <Icon className="h-4 w-4 text-zinc-400" />
                     {q.label}
@@ -407,7 +407,7 @@ function IconChip({
     <button
       type="button"
       className={cn(
-        "flex h-9 items-center justify-center rounded-full bg-[#22252b] px-2.5 text-zinc-300 hover:bg-[#2c3037]",
+        "flex h-9 items-center justify-center rounded-full bg-[#2a2a2a] px-2.5 text-zinc-300 hover:bg-[#333333]",
         className
       )}
     >
@@ -435,7 +435,7 @@ function ModelBadge({
 
   return (
     <div
-      className="flex h-9 items-center gap-2 rounded-full bg-[#22252b] px-3 text-sm text-zinc-200"
+      className="flex h-9 items-center gap-2 rounded-full bg-[#2a2a2a] px-3 text-sm text-zinc-200"
       title={
         selectedModel
           ? `Auto: routed to ${selectedModel.name} (${category}, ${Math.round((confidence ?? 0) * 100)}%)`
@@ -443,7 +443,7 @@ function ModelBadge({
       }
     >
       {routing ? (
-        <Loader2 className="h-4 w-4 animate-spin text-fuchsia-400" />
+        <Loader2 className="h-4 w-4 animate-spin text-[#d63384]" />
       ) : selectedModel && providerConfig?.logoUrl ? (
         <Image
           src={providerConfig.logoUrl}
@@ -454,7 +454,7 @@ function ModelBadge({
           unoptimized
         />
       ) : (
-        <Wand2 className="h-4 w-4 text-fuchsia-400" />
+        <Wand2 className="h-4 w-4 text-[#d63384]" />
       )}
       <span className="font-medium">
         {selectedModel
@@ -488,8 +488,8 @@ function RouteStatus({
 
   const pct = Math.round((result.confidence ?? 0) * 100);
   return (
-    <div className="mt-4 flex w-full items-center gap-3 rounded-lg border border-white/10 bg-[#1a1c20] px-4 py-2.5 text-sm text-zinc-300">
-      <Sparkles className="h-4 w-4 text-fuchsia-400" />
+    <div className="mt-4 flex w-full items-center gap-3 rounded-lg border border-white/10 bg-[#1c1c1c] px-4 py-2.5 text-sm text-zinc-300">
+      <Sparkles className="h-4 w-4 text-[#d63384]" />
       <span className="font-medium text-zinc-200">
         {model?.name ?? result.selectedModelId}
       </span>
