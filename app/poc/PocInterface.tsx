@@ -173,37 +173,37 @@ export function PocInterface() {
       <aside
         className={cn(
           "flex h-full shrink-0 flex-col border-r border-white/5 bg-[#0d0f12] transition-[width] duration-200",
-          collapsed ? "w-0 overflow-hidden" : "w-[260px]"
+          collapsed ? "w-0 overflow-hidden" : "w-[300px]"
         )}
       >
-        <div className="flex items-center gap-2 px-3 pt-3">
+        <div className="flex items-center gap-2 px-4 pt-4">
           <Button
             variant="ghost"
             size="icon"
             onClick={() => setCollapsed(true)}
-            className="h-8 w-8 text-zinc-300 hover:bg-white/5"
+            className="h-10 w-10 text-zinc-300 hover:bg-white/5"
             aria-label="Collapse sidebar"
           >
-            <PanelLeft className="h-4 w-4" />
+            <PanelLeft className="h-5 w-5" />
           </Button>
           <Button
             variant="default"
-            className="ml-auto h-8 gap-1.5 rounded-full bg-fuchsia-600 px-3 text-xs font-medium text-white hover:bg-fuchsia-500"
+            className="ml-auto h-10 gap-2 rounded-full bg-fuchsia-700 px-4 text-sm font-medium text-white hover:bg-fuchsia-600"
             onClick={() => {
               setPrompt("");
               setRouteResult(null);
             }}
           >
-            <Plus className="h-3.5 w-3.5" />
+            <Plus className="h-4 w-4" />
             New
           </Button>
         </div>
 
-        <div className="px-4 pb-2 pt-5 text-sm font-medium text-zinc-200">
+        <div className="px-5 pb-3 pt-7 text-base font-semibold text-zinc-200">
           Chat History
         </div>
 
-        <nav className="flex-1 overflow-y-auto px-2 pb-4">
+        <nav className="flex-1 overflow-y-auto px-3 pb-4">
           {SIDEBAR_SECTIONS.map((section) => {
             const open = !!openSections[section.id];
             return (
@@ -211,13 +211,13 @@ export function PocInterface() {
                 <button
                   type="button"
                   onClick={() => toggleSection(section.id)}
-                  className="flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left text-xs font-medium text-zinc-400 hover:bg-white/5"
+                  className="flex w-full items-center justify-between rounded-md px-2 py-2.5 text-left text-sm font-semibold text-zinc-300 hover:bg-white/5"
                 >
                   <span>{section.label}</span>
                   {open ? (
-                    <ChevronDown className="h-3.5 w-3.5" />
+                    <ChevronDown className="h-4 w-4 text-zinc-400" />
                   ) : (
-                    <ChevronRight className="h-3.5 w-3.5" />
+                    <ChevronRight className="h-4 w-4 text-zinc-400" />
                   )}
                 </button>
                 {open && section.items && section.items.length > 0 && (
@@ -226,7 +226,7 @@ export function PocInterface() {
                       <li key={item.id}>
                         <button
                           type="button"
-                          className="block w-full truncate rounded-md px-2 py-1.5 text-left text-xs text-zinc-300 hover:bg-white/5"
+                          className="block w-full truncate rounded-md px-2 py-2 text-left text-sm text-zinc-300 hover:bg-white/5"
                         >
                           {item.label}
                         </button>
@@ -243,29 +243,29 @@ export function PocInterface() {
       {/* Main area */}
       <div className="relative flex min-w-0 flex-1 flex-col">
         {/* Top bar */}
-        <header className="flex h-14 items-center justify-between px-4">
+        <header className="flex h-16 items-center justify-between px-6">
           <div className="flex items-center gap-2">
             {collapsed && (
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={() => setCollapsed(false)}
-                className="h-8 w-8 text-zinc-300 hover:bg-white/5"
+                className="h-10 w-10 text-zinc-300 hover:bg-white/5"
                 aria-label="Expand sidebar"
               >
-                <PanelLeft className="h-4 w-4" />
+                <PanelLeft className="h-5 w-5" />
               </Button>
             )}
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
             <Button
               variant="outline"
-              className="h-8 rounded-full border-white/10 bg-transparent px-4 text-xs text-zinc-200 hover:bg-white/5"
+              className="h-10 rounded-full border-white/10 bg-transparent px-5 text-sm text-zinc-200 hover:bg-white/5"
             >
               Feedback
             </Button>
-            <Avatar className="h-8 w-8 ring-1 ring-white/10">
-              <AvatarFallback className="bg-amber-500/80 text-[11px] font-semibold text-black">
+            <Avatar className="h-10 w-10 ring-1 ring-white/10">
+              <AvatarFallback className="bg-amber-500/80 text-sm font-semibold text-black">
                 {userInitials}
               </AvatarFallback>
             </Avatar>
@@ -274,28 +274,28 @@ export function PocInterface() {
 
         {/* Centered hero + composer */}
         <main className="flex flex-1 flex-col items-center justify-center px-4">
-          <div className="flex w-full max-w-2xl flex-col items-center">
+          <div className="flex w-full max-w-3xl flex-col items-center">
             {/* Logo tile */}
-            <div className="mb-4 flex h-12 w-12 items-center justify-center overflow-hidden rounded-md bg-fuchsia-600/15 ring-1 ring-fuchsia-500/30">
-              <Wand2 className="h-5 w-5 text-fuchsia-400" />
+            <div className="mb-5 flex h-16 w-16 items-center justify-center overflow-hidden rounded-xl bg-fuchsia-600/15 ring-1 ring-fuchsia-500/30">
+              <Wand2 className="h-7 w-7 text-fuchsia-400" />
             </div>
 
-            <h1 className="flex items-center gap-2 text-3xl font-semibold tracking-tight text-zinc-50">
+            <h1 className="flex items-center gap-3 text-5xl font-semibold tracking-tight text-zinc-50">
               Autorouter
-              <ChevronDown className="h-5 w-5 text-zinc-400" />
+              <ChevronDown className="h-7 w-7 text-zinc-400" />
             </h1>
-            <p className="mt-3 max-w-md text-center text-sm text-zinc-400">
+            <p className="mt-5 max-w-xl text-center text-base leading-relaxed text-zinc-400">
               Intelligent model manager that classifies your prompt and routes
               it to the best available model.
             </p>
-            <p className="mt-1 text-center text-[11px] font-medium text-zinc-500">
+            <p className="mt-2 text-center text-sm font-medium text-zinc-500">
               Proof of concept
             </p>
 
             {/* Composer */}
             <form
               onSubmit={handleSubmit}
-              className="mt-8 w-full rounded-2xl border border-white/10 bg-[#1a1c20] shadow-lg"
+              className="mt-10 w-full rounded-2xl border border-white/10 bg-[#1a1c20] shadow-lg"
             >
               <textarea
                 value={prompt}
@@ -308,9 +308,9 @@ export function PocInterface() {
                     handleSubmit();
                   }
                 }}
-                className="block w-full resize-none bg-transparent px-4 pt-4 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none"
+                className="block w-full resize-none bg-transparent px-5 pt-5 text-base text-zinc-100 placeholder:text-zinc-500 focus:outline-none"
               />
-              <div className="flex items-center gap-2 px-3 pb-3 pt-1">
+              <div className="flex items-center gap-2 px-3 pb-3 pt-2">
                 <ModelBadge
                   routing={routing}
                   selectedModel={selectedModel}
@@ -319,39 +319,39 @@ export function PocInterface() {
                   hasPrompt={!!prompt.trim()}
                 />
                 <IconChip>
-                  <Paperclip className="h-3.5 w-3.5" />
+                  <Paperclip className="h-4 w-4" />
                 </IconChip>
-                <IconChip className="gap-1 px-2.5">
-                  <Globe className="h-3.5 w-3.5" />
-                  <span className="text-[11px] text-zinc-300">Off</span>
-                  <ChevronDown className="h-3 w-3 text-zinc-400" />
-                </IconChip>
-                <IconChip>
-                  <Cloud className="h-3.5 w-3.5" />
+                <IconChip className="gap-1.5 px-3">
+                  <Globe className="h-4 w-4" />
+                  <span className="text-sm text-zinc-300">Off</span>
+                  <ChevronDown className="h-3.5 w-3.5 text-zinc-400" />
                 </IconChip>
                 <IconChip>
-                  <LayoutGrid className="h-3.5 w-3.5" />
+                  <Cloud className="h-4 w-4" />
                 </IconChip>
                 <IconChip>
-                  <ImageIcon className="h-3.5 w-3.5" />
+                  <LayoutGrid className="h-4 w-4" />
                 </IconChip>
                 <IconChip>
-                  <Info className="h-3.5 w-3.5" />
+                  <ImageIcon className="h-4 w-4" />
                 </IconChip>
-                <div className="ml-auto flex items-center gap-1.5">
+                <IconChip>
+                  <Info className="h-4 w-4" />
+                </IconChip>
+                <div className="ml-auto flex items-center gap-2">
                   <IconChip>
-                    <Mic className="h-3.5 w-3.5" />
+                    <Mic className="h-4 w-4" />
                   </IconChip>
                   <button
                     type="submit"
                     disabled={!prompt.trim() || routing}
-                    className="flex h-7 w-7 items-center justify-center rounded-full bg-fuchsia-600 text-white transition hover:bg-fuchsia-500 disabled:opacity-40"
+                    className="flex h-9 w-9 items-center justify-center rounded-full bg-fuchsia-700 text-white transition hover:bg-fuchsia-600 disabled:opacity-40"
                     aria-label="Send"
                   >
                     {routing ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
-                      <Send className="h-3.5 w-3.5" />
+                      <Send className="h-4 w-4" />
                     )}
                   </button>
                 </div>
@@ -368,7 +368,7 @@ export function PocInterface() {
             )}
 
             {/* Quick action buttons */}
-            <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
+            <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
               {QUICK_ACTIONS.map((q) => {
                 const Icon = q.icon;
                 return (
@@ -376,9 +376,9 @@ export function PocInterface() {
                     key={q.id}
                     type="button"
                     onClick={() => handleQuickAction(q)}
-                    className="flex items-center gap-2 rounded-full border border-white/10 bg-[#1a1c20] px-3.5 py-1.5 text-xs text-zinc-300 transition hover:border-white/20 hover:bg-[#22252b]"
+                    className="flex h-10 items-center gap-2 rounded-full border border-white/10 bg-[#1a1c20] px-5 text-sm text-zinc-200 transition hover:border-white/20 hover:bg-[#22252b]"
                   >
-                    <Icon className="h-3.5 w-3.5 text-zinc-400" />
+                    <Icon className="h-4 w-4 text-zinc-400" />
                     {q.label}
                   </button>
                 );
@@ -388,10 +388,8 @@ export function PocInterface() {
         </main>
 
         {/* Footer */}
-        <footer className="flex items-center justify-center px-6 pb-3 text-[11px] text-zinc-500">
-          <span>
-            AI-generated responses may be inaccurate or unreliable.
-          </span>
+        <footer className="flex items-center justify-center px-6 pb-4 text-xs text-zinc-500">
+          <span>AI-generated responses may be inaccurate or unreliable.</span>
         </footer>
       </div>
     </div>
@@ -409,7 +407,7 @@ function IconChip({
     <button
       type="button"
       className={cn(
-        "flex h-7 items-center justify-center rounded-full bg-[#22252b] px-2 text-zinc-300 hover:bg-[#2c3037]",
+        "flex h-9 items-center justify-center rounded-full bg-[#22252b] px-2.5 text-zinc-300 hover:bg-[#2c3037]",
         className
       )}
     >
@@ -437,7 +435,7 @@ function ModelBadge({
 
   return (
     <div
-      className="flex h-7 items-center gap-1.5 rounded-full bg-[#22252b] px-2.5 text-[11px] text-zinc-200"
+      className="flex h-9 items-center gap-2 rounded-full bg-[#22252b] px-3 text-sm text-zinc-200"
       title={
         selectedModel
           ? `Auto: routed to ${selectedModel.name} (${category}, ${Math.round((confidence ?? 0) * 100)}%)`
@@ -445,18 +443,18 @@ function ModelBadge({
       }
     >
       {routing ? (
-        <Loader2 className="h-3 w-3 animate-spin text-fuchsia-400" />
+        <Loader2 className="h-4 w-4 animate-spin text-fuchsia-400" />
       ) : selectedModel && providerConfig?.logoUrl ? (
         <Image
           src={providerConfig.logoUrl}
           alt={providerConfig.displayName}
-          width={12}
-          height={12}
+          width={16}
+          height={16}
           className="object-contain"
           unoptimized
         />
       ) : (
-        <Wand2 className="h-3 w-3 text-fuchsia-400" />
+        <Wand2 className="h-4 w-4 text-fuchsia-400" />
       )}
       <span className="font-medium">
         {selectedModel
@@ -465,7 +463,7 @@ function ModelBadge({
             ? "Auto · routing…"
             : "Auto"}
       </span>
-      <ChevronDown className="h-3 w-3 text-zinc-400" />
+      <ChevronDown className="h-3.5 w-3.5 text-zinc-400" />
     </div>
   );
 }
@@ -481,7 +479,7 @@ function RouteStatus({
 }) {
   if (error) {
     return (
-      <div className="mt-3 w-full rounded-lg border border-red-500/20 bg-red-500/5 px-3 py-2 text-xs text-red-300">
+      <div className="mt-4 w-full rounded-lg border border-red-500/20 bg-red-500/5 px-4 py-2.5 text-sm text-red-300">
         Autorouter error: {error}
       </div>
     );
@@ -490,8 +488,8 @@ function RouteStatus({
 
   const pct = Math.round((result.confidence ?? 0) * 100);
   return (
-    <div className="mt-3 flex w-full items-center gap-3 rounded-lg border border-white/10 bg-[#1a1c20] px-3 py-2 text-xs text-zinc-300">
-      <Sparkles className="h-3.5 w-3.5 text-fuchsia-400" />
+    <div className="mt-4 flex w-full items-center gap-3 rounded-lg border border-white/10 bg-[#1a1c20] px-4 py-2.5 text-sm text-zinc-300">
+      <Sparkles className="h-4 w-4 text-fuchsia-400" />
       <span className="font-medium text-zinc-200">
         {model?.name ?? result.selectedModelId}
       </span>
