@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "AZ ChatGPT - Autorouter PoC",
+  title: "Autorouter PoC",
   description: "Proof of concept: model manager with intelligent autorouter",
 };
 

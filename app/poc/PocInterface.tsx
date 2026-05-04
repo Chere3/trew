@@ -276,25 +276,20 @@ export function PocInterface() {
         <main className="flex flex-1 flex-col items-center justify-center px-4">
           <div className="flex w-full max-w-2xl flex-col items-center">
             {/* Logo tile */}
-            <div className="mb-4 flex h-12 w-14 flex-col items-stretch overflow-hidden rounded-md ring-1 ring-white/10">
-              <div className="flex flex-1 items-center justify-center bg-[#7a1f4a] text-[10px] font-bold tracking-wide text-white">
-                AZ
-              </div>
-              <div className="flex flex-1 items-center justify-center bg-[#d9a44a] text-[8px] font-bold uppercase tracking-tight text-black">
-                ChatGPT
-              </div>
+            <div className="mb-4 flex h-12 w-12 items-center justify-center overflow-hidden rounded-md bg-fuchsia-600/15 ring-1 ring-fuchsia-500/30">
+              <Wand2 className="h-5 w-5 text-fuchsia-400" />
             </div>
 
             <h1 className="flex items-center gap-2 text-3xl font-semibold tracking-tight text-zinc-50">
-              AZ ChatGPT
+              Autorouter
               <ChevronDown className="h-5 w-5 text-zinc-400" />
             </h1>
             <p className="mt-3 max-w-md text-center text-sm text-zinc-400">
-              Enterprise AI assistant that answers questions, provides
-              information and generates content.
+              Intelligent model manager that classifies your prompt and routes
+              it to the best available model.
             </p>
             <p className="mt-1 text-center text-[11px] font-medium text-zinc-500">
-              Created by AZ ChatGPT Team - IGNITE
+              Proof of concept
             </p>
 
             {/* Composer */}
@@ -305,7 +300,7 @@ export function PocInterface() {
               <textarea
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
-                placeholder="Message AZ ChatGPT..."
+                placeholder="Ask anything..."
                 rows={1}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !e.shiftKey) {
@@ -393,21 +388,10 @@ export function PocInterface() {
         </main>
 
         {/* Footer */}
-        <footer className="flex items-center justify-between px-6 pb-3 text-[11px] text-zinc-500">
-          <span className="font-semibold tracking-tight text-zinc-400">
-            AstraZeneca
-            <span className="ml-0.5 align-super text-[7px] text-fuchsia-400">
-              ✦
-            </span>
-          </span>
+        <footer className="flex items-center justify-center px-6 pb-3 text-[11px] text-zinc-500">
           <span>
-            AI-generated responses may be inaccurate or unreliable. Read the{" "}
-            <a className="underline underline-offset-2" href="#">
-              Terms Of Use
-            </a>
-            .
+            AI-generated responses may be inaccurate or unreliable.
           </span>
-          <span />
         </footer>
       </div>
     </div>
