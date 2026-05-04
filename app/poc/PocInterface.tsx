@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import {
   ChevronDown,
@@ -37,6 +37,7 @@ import { getProviderConfig } from "@/lib/models/providers";
 import { POC_MODELS, type PocModel } from "./poc-models";
 
 const POC_AUTOROUTE_ENDPOINT = "/api/poc/autoroute";
+const POC_CHAT_ENDPOINT = "/api/poc/chat";
 
 interface PocAutorouteResponse {
   selectedModelId: string;
@@ -45,8 +46,30 @@ interface PocAutorouteResponse {
   category: string;
   confidence: number;
   reasoning?: string;
+  classifier?: "ai" | "heuristic" | "ai-fallback";
   offline?: boolean;
 }
+
+interface ChatMessage {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  isStreaming?: boolean;
+  routing?: PocAutorouteResponse | null;
+  modelId?: string;
+  modelName?: string;
+  provider?: string;
+  error?: string;
+}
+
+const CLASSIFIER_LABEL: Record<
+  NonNullable<PocAutorouteResponse["classifier"]>,
+  string
+> = {
+  ai: "AI classifier",
+  heuristic: "Heuristic classifier",
+  "ai-fallback": "Heuristic (AI key failed)",
+};
 
 interface SidebarSection {
   id: string;
@@ -109,66 +132,153 @@ export function PocInterface() {
     Object.fromEntries(SIDEBAR_SECTIONS.map((s) => [s.id, !!s.defaultOpen]))
   );
   const [prompt, setPrompt] = useState("");
-  const [routing, setRouting] = useState(false);
-  const [routeResult, setRouteResult] = useState<PocAutorouteResponse | null>(
-    null
-  );
-  const [routeError, setRouteError] = useState<string | null>(null);
   const [pinnedModel, setPinnedModel] = useState<PocModel | null>(null);
   const [modelPickerOpen, setModelPickerOpen] = useState(false);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const lastRoutedPromptRef = useRef<string>("");
-
-  const routePrompt = useCallback(async (text: string) => {
-    const trimmed = text.trim();
-    if (!trimmed || trimmed === lastRoutedPromptRef.current) return;
-    lastRoutedPromptRef.current = trimmed;
-    setRouting(true);
-    setRouteError(null);
-    try {
-      const res = await fetch(POC_AUTOROUTE_ENDPOINT, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: trimmed }),
-      });
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body.error || `Autoroute failed (${res.status})`);
-      }
-      const data = (await res.json()) as PocAutorouteResponse;
-      setRouteResult(data);
-    } catch (e) {
-      setRouteError(e instanceof Error ? e.message : "Autoroute failed");
-    } finally {
-      setRouting(false);
-    }
-  }, []);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [busy, setBusy] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    if (!prompt.trim() || pinnedModel) {
-      setRouteResult(null);
-      setRouteError(null);
-      lastRoutedPromptRef.current = "";
-      return;
-    }
-    debounceRef.current = setTimeout(() => {
-      routePrompt(prompt);
-    }, 600);
-    return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-    };
-  }, [prompt, routePrompt, pinnedModel]);
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   const toggleSection = (id: string) =>
     setOpenSections((prev) => ({ ...prev, [id]: !prev[id] }));
 
   const handleQuickAction = (q: QuickAction) => setPrompt(q.prompt);
 
+  const resolveModel = async (
+    text: string
+  ): Promise<{
+    modelId: string;
+    modelName: string;
+    provider?: string;
+    routing: PocAutorouteResponse | null;
+  }> => {
+    if (pinnedModel) {
+      return {
+        modelId: pinnedModel.id,
+        modelName: pinnedModel.name,
+        provider: pinnedModel.provider,
+        routing: null,
+      };
+    }
+    const res = await fetch(POC_AUTOROUTE_ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt: text }),
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.error || `Autoroute failed (${res.status})`);
+    }
+    const data = (await res.json()) as PocAutorouteResponse;
+    return {
+      modelId: data.selectedModelId,
+      modelName: data.modelName,
+      provider: data.provider,
+      routing: data,
+    };
+  };
+
+  const streamReply = async (
+    assistantId: string,
+    modelId: string,
+    history: ChatMessage[]
+  ) => {
+    const apiMessages = history
+      .filter((m) => !m.error)
+      .map((m) => ({ role: m.role, content: m.content }));
+
+    const res = await fetch(POC_CHAT_ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ model: modelId, messages: apiMessages }),
+    });
+
+    if (!res.ok || !res.body) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.error || `Chat failed (${res.status})`);
+    }
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let acc = "";
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      acc += decoder.decode(value, { stream: true });
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === assistantId ? { ...m, content: acc } : m
+        )
+      );
+    }
+    setMessages((prev) =>
+      prev.map((m) =>
+        m.id === assistantId ? { ...m, isStreaming: false } : m
+      )
+    );
+  };
+
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
-    if (!prompt.trim() || pinnedModel) return;
-    await routePrompt(prompt);
+    const text = prompt.trim();
+    if (!text || busy) return;
+
+    const userId = `u-${Date.now()}`;
+    const assistantId = `a-${Date.now()}`;
+    const userMsg: ChatMessage = { id: userId, role: "user", content: text };
+
+    setMessages((prev) => [...prev, userMsg]);
+    setPrompt("");
+    setBusy(true);
+
+    try {
+      const route = await resolveModel(text);
+
+      const assistantMsg: ChatMessage = {
+        id: assistantId,
+        role: "assistant",
+        content: "",
+        isStreaming: true,
+        routing: route.routing,
+        modelId: route.modelId,
+        modelName: route.modelName,
+        provider: route.provider,
+      };
+      setMessages((prev) => [...prev, assistantMsg]);
+
+      await streamReply(assistantId, route.modelId, [...messages, userMsg]);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Request failed";
+      setMessages((prev) => {
+        const exists = prev.some((m) => m.id === assistantId);
+        if (exists) {
+          return prev.map((m) =>
+            m.id === assistantId
+              ? { ...m, isStreaming: false, error: message }
+              : m
+          );
+        }
+        return [
+          ...prev,
+          {
+            id: assistantId,
+            role: "assistant",
+            content: "",
+            error: message,
+          },
+        ];
+      });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleNewChat = () => {
+    setMessages([]);
+    setPrompt("");
   };
 
   const pickAuto = () => {
@@ -178,8 +288,6 @@ export function PocInterface() {
 
   const pickModel = (m: PocModel) => {
     setPinnedModel(m);
-    setRouteResult(null);
-    setRouteError(null);
     setModelPickerOpen(false);
   };
 
@@ -207,10 +315,7 @@ export function PocInterface() {
           <Button
             variant="default"
             className="ml-auto h-10 gap-2 rounded-full bg-[#830051] px-4 text-sm font-medium text-white hover:bg-[#65003f]"
-            onClick={() => {
-              setPrompt("");
-              setRouteResult(null);
-            }}
+            onClick={handleNewChat}
           >
             <Plus className="h-4 w-4" />
             New
@@ -290,118 +395,84 @@ export function PocInterface() {
           </div>
         </header>
 
-        {/* Centered hero + composer */}
-        <main className="flex flex-1 flex-col items-center justify-center px-4">
-          <div className="flex w-full max-w-3xl flex-col items-center">
-            {/* Logo tile */}
-            <div className="mb-5 flex h-16 w-16 items-center justify-center overflow-hidden rounded-xl bg-[#830051]/20 ring-1 ring-[#830051]/40">
-              <Wand2 className="h-7 w-7 text-[#da338c]" />
-            </div>
+        {/* Main content: hero (empty state) or message list, with anchored composer */}
+        <main className="flex min-h-0 flex-1 flex-col">
+          {messages.length === 0 ? (
+            <div className="flex flex-1 flex-col items-center justify-center px-4">
+              <div className="flex w-full max-w-3xl flex-col items-center">
+                <div className="mb-5 flex h-16 w-16 items-center justify-center overflow-hidden rounded-xl bg-[#830051]/20 ring-1 ring-[#830051]/40">
+                  <Wand2 className="h-7 w-7 text-[#da338c]" />
+                </div>
+                <h1 className="flex items-center gap-3 text-5xl font-semibold tracking-tight text-white">
+                  Autorouter
+                  <ChevronDown className="h-7 w-7 text-[#909296]" />
+                </h1>
+                <p className="mt-5 max-w-xl text-center text-base leading-relaxed text-[#909296]">
+                  Intelligent model manager that classifies your prompt and
+                  routes it to the best available model.
+                </p>
+                <p className="mt-2 text-center text-sm font-medium text-[#5c5f66]">
+                  Proof of concept
+                </p>
 
-            <h1 className="flex items-center gap-3 text-5xl font-semibold tracking-tight text-white">
-              Autorouter
-              <ChevronDown className="h-7 w-7 text-[#909296]" />
-            </h1>
-            <p className="mt-5 max-w-xl text-center text-base leading-relaxed text-[#909296]">
-              Intelligent model manager that classifies your prompt and routes
-              it to the best available model.
-            </p>
-            <p className="mt-2 text-center text-sm font-medium text-[#5c5f66]">
-              Proof of concept
-            </p>
-
-            {/* Composer */}
-            <form
-              onSubmit={handleSubmit}
-              className="mt-10 w-full rounded-2xl border border-white/10 bg-[#1a1b1e] shadow-lg"
-            >
-              <textarea
-                value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
-                placeholder="Ask anything..."
-                rows={1}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSubmit();
-                  }
-                }}
-                className="block w-full resize-none bg-transparent px-5 pt-5 text-base text-[#c1c2c5] placeholder:text-[#5c5f66] focus:outline-none"
-              />
-              <div className="flex items-center gap-2 px-3 pb-3 pt-2">
-                <ModelPicker
-                  open={modelPickerOpen}
-                  onOpenChange={setModelPickerOpen}
-                  routing={routing}
-                  result={routeResult}
+                <Composer
+                  className="mt-10 w-full"
+                  prompt={prompt}
+                  setPrompt={setPrompt}
+                  onSubmit={handleSubmit}
+                  busy={busy}
+                  modelPickerOpen={modelPickerOpen}
+                  setModelPickerOpen={setModelPickerOpen}
                   pinnedModel={pinnedModel}
-                  hasPrompt={!!prompt.trim()}
-                  onPickAuto={pickAuto}
-                  onPickModel={pickModel}
+                  pickAuto={pickAuto}
+                  pickModel={pickModel}
                 />
-                <IconChip>
-                  <Paperclip className="h-4 w-4" />
-                </IconChip>
-                <IconChip className="gap-1.5 px-3">
-                  <Globe className="h-4 w-4" />
-                  <span className="text-sm text-[#a6a7ab]">Off</span>
-                  <ChevronDown className="h-3.5 w-3.5 text-[#909296]" />
-                </IconChip>
-                <IconChip>
-                  <Cloud className="h-4 w-4" />
-                </IconChip>
-                <IconChip>
-                  <LayoutGrid className="h-4 w-4" />
-                </IconChip>
-                <IconChip>
-                  <ImageIcon className="h-4 w-4" />
-                </IconChip>
-                <IconChip>
-                  <Info className="h-4 w-4" />
-                </IconChip>
-                <div className="ml-auto flex items-center gap-2">
-                  <IconChip>
-                    <Mic className="h-4 w-4" />
-                  </IconChip>
-                  <button
-                    type="submit"
-                    disabled={!prompt.trim() || routing}
-                    className="flex h-9 w-9 items-center justify-center rounded-full bg-[#830051] text-white transition hover:bg-[#65003f] disabled:opacity-40"
-                    aria-label="Send"
-                  >
-                    {routing ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Send className="h-4 w-4" />
-                    )}
-                  </button>
+
+                <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
+                  {QUICK_ACTIONS.map((q) => {
+                    const Icon = q.icon;
+                    return (
+                      <button
+                        key={q.id}
+                        type="button"
+                        onClick={() => handleQuickAction(q)}
+                        className="flex h-10 items-center gap-2 rounded-full border border-white/10 bg-[#1a1b1e] px-5 text-sm text-[#c1c2c5] transition hover:border-white/20 hover:bg-[#25262b]"
+                      >
+                        <Icon className="h-4 w-4 text-[#909296]" />
+                        {q.label}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
-            </form>
-
-            {/* Autorouter status panel */}
-            {(routeResult || routeError) && (
-              <RouteStatus error={routeError} result={routeResult} />
-            )}
-
-            {/* Quick action buttons */}
-            <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
-              {QUICK_ACTIONS.map((q) => {
-                const Icon = q.icon;
-                return (
-                  <button
-                    key={q.id}
-                    type="button"
-                    onClick={() => handleQuickAction(q)}
-                    className="flex h-10 items-center gap-2 rounded-full border border-white/10 bg-[#1a1b1e] px-5 text-sm text-[#c1c2c5] transition hover:border-white/20 hover:bg-[#25262b]"
-                  >
-                    <Icon className="h-4 w-4 text-[#909296]" />
-                    {q.label}
-                  </button>
-                );
-              })}
             </div>
-          </div>
+          ) : (
+            <>
+              <div className="flex-1 overflow-y-auto">
+                <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-8">
+                  {messages.map((m) => (
+                    <MessageBubble key={m.id} message={m} />
+                  ))}
+                  <div ref={messagesEndRef} />
+                </div>
+              </div>
+              <div className="border-t border-white/5 bg-[#101113] px-4 py-4">
+                <div className="mx-auto w-full max-w-3xl">
+                  <Composer
+                    prompt={prompt}
+                    setPrompt={setPrompt}
+                    onSubmit={handleSubmit}
+                    busy={busy}
+                    modelPickerOpen={modelPickerOpen}
+                    setModelPickerOpen={setModelPickerOpen}
+                    pinnedModel={pinnedModel}
+                    pickAuto={pickAuto}
+                    pickModel={pickModel}
+                  />
+                </div>
+              </div>
+            </>
+          )}
         </main>
 
         {/* Footer */}
@@ -436,32 +507,21 @@ function IconChip({
 function ModelPicker({
   open,
   onOpenChange,
-  routing,
-  result,
   pinnedModel,
-  hasPrompt,
   onPickAuto,
   onPickModel,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  routing: boolean;
-  result: PocAutorouteResponse | null;
   pinnedModel: PocModel | null;
-  hasPrompt: boolean;
   onPickAuto: () => void;
   onPickModel: (m: PocModel) => void;
 }) {
-  const activeProvider = pinnedModel?.provider ?? result?.provider;
-  const providerConfig = activeProvider ? getProviderConfig(activeProvider) : null;
+  const providerConfig = pinnedModel
+    ? getProviderConfig(pinnedModel.provider)
+    : null;
 
-  const label = pinnedModel
-    ? pinnedModel.name
-    : result
-      ? `Auto · ${result.modelName}`
-      : hasPrompt && routing
-        ? "Auto · routing…"
-        : "Auto";
+  const label = pinnedModel ? pinnedModel.name : "Auto";
 
   return (
     <Popover open={open} onOpenChange={onOpenChange}>
@@ -472,14 +532,10 @@ function ModelPicker({
           title={
             pinnedModel
               ? `Pinned: ${pinnedModel.name}`
-              : result
-                ? `Auto: routed to ${result.modelName} (${result.category}, ${Math.round(result.confidence * 100)}%)`
-                : "Auto-router (intelligent model selection)"
+              : "Auto-router (intelligent model selection)"
           }
         >
-          {!pinnedModel && routing ? (
-            <Loader2 className="h-4 w-4 animate-spin text-[#da338c]" />
-          ) : providerConfig?.logoUrl ? (
+          {providerConfig?.logoUrl ? (
             <Image
               src={providerConfig.logoUrl}
               alt={providerConfig.displayName}
@@ -583,40 +639,195 @@ function ModelPicker({
   );
 }
 
-function RouteStatus({
-  error,
-  result,
+function Composer({
+  className,
+  prompt,
+  setPrompt,
+  onSubmit,
+  busy,
+  modelPickerOpen,
+  setModelPickerOpen,
+  pinnedModel,
+  pickAuto,
+  pickModel,
 }: {
-  error: string | null;
-  result: PocAutorouteResponse | null;
+  className?: string;
+  prompt: string;
+  setPrompt: (v: string) => void;
+  onSubmit: (e?: React.FormEvent) => void | Promise<void>;
+  busy: boolean;
+  modelPickerOpen: boolean;
+  setModelPickerOpen: (v: boolean) => void;
+  pinnedModel: PocModel | null;
+  pickAuto: () => void;
+  pickModel: (m: PocModel) => void;
 }) {
-  if (error) {
+  return (
+    <form
+      onSubmit={onSubmit}
+      className={cn(
+        "rounded-2xl border border-white/10 bg-[#1a1b1e] shadow-lg",
+        className
+      )}
+    >
+      <textarea
+        value={prompt}
+        onChange={(e) => setPrompt(e.target.value)}
+        placeholder="Ask anything..."
+        rows={1}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            onSubmit();
+          }
+        }}
+        className="block w-full resize-none bg-transparent px-5 pt-5 text-base text-[#c1c2c5] placeholder:text-[#5c5f66] focus:outline-none"
+      />
+      <div className="flex items-center gap-2 px-3 pb-3 pt-2">
+        <ModelPicker
+          open={modelPickerOpen}
+          onOpenChange={setModelPickerOpen}
+          pinnedModel={pinnedModel}
+          onPickAuto={pickAuto}
+          onPickModel={pickModel}
+        />
+        <IconChip>
+          <Paperclip className="h-4 w-4" />
+        </IconChip>
+        <IconChip className="gap-1.5 px-3">
+          <Globe className="h-4 w-4" />
+          <span className="text-sm text-[#a6a7ab]">Off</span>
+          <ChevronDown className="h-3.5 w-3.5 text-[#909296]" />
+        </IconChip>
+        <IconChip>
+          <Cloud className="h-4 w-4" />
+        </IconChip>
+        <IconChip>
+          <LayoutGrid className="h-4 w-4" />
+        </IconChip>
+        <IconChip>
+          <ImageIcon className="h-4 w-4" />
+        </IconChip>
+        <IconChip>
+          <Info className="h-4 w-4" />
+        </IconChip>
+        <div className="ml-auto flex items-center gap-2">
+          <IconChip>
+            <Mic className="h-4 w-4" />
+          </IconChip>
+          <button
+            type="submit"
+            disabled={!prompt.trim() || busy}
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-[#830051] text-white transition hover:bg-[#65003f] disabled:opacity-40"
+            aria-label="Send"
+          >
+            {busy ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Send className="h-4 w-4" />
+            )}
+          </button>
+        </div>
+      </div>
+    </form>
+  );
+}
+
+function MessageBubble({ message }: { message: ChatMessage }) {
+  if (message.role === "user") {
     return (
-      <div className="mt-4 w-full rounded-lg border border-red-500/20 bg-red-500/5 px-4 py-2.5 text-sm text-red-300">
-        Autorouter error: {error}
+      <div className="flex justify-end">
+        <div className="max-w-[80%] rounded-2xl bg-[#830051] px-4 py-3 text-sm text-white">
+          {message.content}
+        </div>
       </div>
     );
   }
-  if (!result) return null;
 
-  const pct = Math.round((result.confidence ?? 0) * 100);
+  const providerCfg = message.provider
+    ? getProviderConfig(message.provider)
+    : null;
+
   return (
-    <div className="mt-4 flex w-full items-center gap-3 rounded-lg border border-white/10 bg-[#1a1b1e] px-4 py-2.5 text-sm text-[#a6a7ab]">
-      <Sparkles className="h-4 w-4 text-[#da338c]" />
-      <span className="font-medium text-[#c1c2c5]">
-        {result.modelName}
-      </span>
-      <span className="text-[#5c5f66]">·</span>
-      <span className="capitalize">{result.category.replace("_", " ")}</span>
-      <span className="text-[#5c5f66]">·</span>
-      <span>{pct}% confidence</span>
-      {result.reasoning && (
-        <span
-          className="ml-auto truncate text-[#5c5f66]"
-          title={result.reasoning}
-        >
-          {result.reasoning}
-        </span>
+    <div className="flex flex-col gap-2">
+      {(message.routing || message.modelName) && (
+        <RoutingChip message={message} />
+      )}
+      <div className="flex items-start gap-3">
+        <div className="mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#25262b]">
+          {providerCfg?.logoUrl ? (
+            <Image
+              src={providerCfg.logoUrl}
+              alt={providerCfg.displayName}
+              width={16}
+              height={16}
+              className="object-contain"
+              unoptimized
+            />
+          ) : (
+            <Sparkles className="h-3.5 w-3.5 text-[#da338c]" />
+          )}
+        </div>
+        <div className="min-w-0 flex-1 whitespace-pre-wrap text-sm leading-relaxed text-[#c1c2c5]">
+          {message.error ? (
+            <span className="text-red-300">Error: {message.error}</span>
+          ) : (
+            <>
+              {message.content || (
+                <span className="text-[#5c5f66]">Thinking…</span>
+              )}
+              {message.isStreaming && message.content && (
+                <span className="ml-0.5 inline-block h-3 w-1 animate-pulse bg-[#da338c] align-middle" />
+              )}
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function RoutingChip({ message }: { message: ChatMessage }) {
+  const routing = message.routing;
+  return (
+    <div className="flex flex-wrap items-center gap-2 text-xs text-[#909296]">
+      {routing ? (
+        <>
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-[#830051]/15 px-2.5 py-1 text-[#da338c] ring-1 ring-[#830051]/30">
+            <Wand2 className="h-3 w-3" />
+            Auto
+          </span>
+          <span>routed to</span>
+          <span className="font-medium text-[#c1c2c5]">
+            {message.modelName}
+          </span>
+          <span className="text-[#5c5f66]">·</span>
+          <span className="capitalize">
+            {routing.category.replace("_", " ")}
+          </span>
+          <span className="text-[#5c5f66]">·</span>
+          <span>{Math.round(routing.confidence * 100)}% confidence</span>
+          {routing.classifier && routing.classifier !== "ai" && (
+            <span
+              className="rounded-full bg-[#25262b] px-2 py-0.5 text-[#909296]"
+              title={routing.reasoning}
+            >
+              {routing.classifier === "heuristic"
+                ? "heuristic"
+                : "heuristic (AI fallback)"}
+            </span>
+          )}
+        </>
+      ) : (
+        <>
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-[#25262b] px-2.5 py-1 text-[#a6a7ab]">
+            <Sparkles className="h-3 w-3" />
+            Pinned
+          </span>
+          <span className="font-medium text-[#c1c2c5]">
+            {message.modelName}
+          </span>
+        </>
       )}
     </div>
   );

@@ -20,18 +20,32 @@ export async function POST(req: Request) {
     const rankedModels = POC_MODELS.map((m) => toRankedModel(m));
 
     let result: AutorouteResult;
+    let classifier: "ai" | "heuristic" | "ai-fallback" = "heuristic";
 
     if (FIREWORKS_API_KEY) {
       try {
         result = await selectOptimalModel(prompt, rankedModels, {
           fireworksApiKey: FIREWORKS_API_KEY,
         });
+        classifier = "ai";
+
+        // classifyPrompt swallows network/auth errors and returns this
+        // sentinel reasoning. When that happens (e.g. invalid Fireworks
+        // key → 401), prefer the heuristic over a blanket "general".
+        if (result.reasoning === "Default classification due to error") {
+          console.warn(
+            "[poc/autoroute] AI classifier returned default; falling back to heuristic. Check FIREWORKS_API_KEY."
+          );
+          result = heuristicSelect(prompt, rankedModels);
+          classifier = "ai-fallback";
+        }
       } catch (e) {
         console.warn(
-          "[poc/autoroute] AI classifier unavailable, falling back to heuristic:",
+          "[poc/autoroute] AI classifier threw, falling back to heuristic:",
           e
         );
         result = heuristicSelect(prompt, rankedModels);
+        classifier = "ai-fallback";
       }
     } else {
       result = heuristicSelect(prompt, rankedModels);
@@ -46,6 +60,7 @@ export async function POST(req: Request) {
       category: result.category,
       confidence: result.confidence,
       reasoning: result.reasoning,
+      classifier,
       offline: !FIREWORKS_API_KEY,
     });
   } catch (error) {
