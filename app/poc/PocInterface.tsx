@@ -168,11 +168,11 @@ export function PocInterface() {
   const userInitials = "U";
 
   return (
-    <div className="flex h-[100dvh] w-full overflow-hidden bg-[#0d0d0d] text-zinc-100">
+    <div className="flex h-[100dvh] w-full overflow-hidden bg-[#101113] text-[#c1c2c5]">
       {/* Sidebar */}
       <aside
         className={cn(
-          "flex h-full shrink-0 flex-col border-r border-white/5 bg-[#0d0d0d] transition-[width] duration-200",
+          "flex h-full shrink-0 flex-col border-r border-white/5 bg-[#101113] transition-[width] duration-200",
           collapsed ? "w-0 overflow-hidden" : "w-[300px]"
         )}
       >
@@ -181,14 +181,14 @@ export function PocInterface() {
             variant="ghost"
             size="icon"
             onClick={() => setCollapsed(true)}
-            className="h-10 w-10 text-zinc-300 hover:bg-white/5"
+            className="h-10 w-10 text-[#a6a7ab] hover:bg-white/5"
             aria-label="Collapse sidebar"
           >
             <PanelLeft className="h-5 w-5" />
           </Button>
           <Button
             variant="default"
-            className="ml-auto h-10 gap-2 rounded-full bg-[#8b1d4a] px-4 text-sm font-medium text-white hover:bg-[#a02257]"
+            className="ml-auto h-10 gap-2 rounded-full bg-[#830051] px-4 text-sm font-medium text-white hover:bg-[#65003f]"
             onClick={() => {
               setPrompt("");
               setRouteResult(null);
@@ -199,7 +199,7 @@ export function PocInterface() {
           </Button>
         </div>
 
-        <div className="px-5 pb-3 pt-7 text-base font-semibold text-zinc-200">
+        <div className="px-5 pb-3 pt-7 text-base font-semibold text-[#c1c2c5]">
           Chat History
         </div>
 
@@ -211,13 +211,13 @@ export function PocInterface() {
                 <button
                   type="button"
                   onClick={() => toggleSection(section.id)}
-                  className="flex w-full items-center justify-between rounded-md px-2 py-2.5 text-left text-sm font-semibold text-zinc-300 hover:bg-white/5"
+                  className="flex w-full items-center justify-between rounded-md px-2 py-2.5 text-left text-sm font-semibold text-[#a6a7ab] hover:bg-white/5"
                 >
                   <span>{section.label}</span>
                   {open ? (
-                    <ChevronDown className="h-4 w-4 text-zinc-400" />
+                    <ChevronDown className="h-4 w-4 text-[#909296]" />
                   ) : (
-                    <ChevronRight className="h-4 w-4 text-zinc-400" />
+                    <ChevronRight className="h-4 w-4 text-[#909296]" />
                   )}
                 </button>
                 {open && section.items && section.items.length > 0 && (
@@ -226,7 +226,7 @@ export function PocInterface() {
                       <li key={item.id}>
                         <button
                           type="button"
-                          className="block w-full truncate rounded-md px-2 py-2 text-left text-sm text-zinc-300 hover:bg-white/5"
+                          className="block w-full truncate rounded-md px-2 py-2 text-left text-sm text-[#a6a7ab] hover:bg-white/5"
                         >
                           {item.label}
                         </button>
@@ -250,7 +250,7 @@ export function PocInterface() {
                 variant="ghost"
                 size="icon"
                 onClick={() => setCollapsed(false)}
-                className="h-10 w-10 text-zinc-300 hover:bg-white/5"
+                className="h-10 w-10 text-[#a6a7ab] hover:bg-white/5"
                 aria-label="Expand sidebar"
               >
                 <PanelLeft className="h-5 w-5" />
@@ -260,12 +260,12 @@ export function PocInterface() {
           <div className="flex items-center gap-4">
             <Button
               variant="outline"
-              className="h-10 rounded-full border-white/10 bg-transparent px-5 text-sm text-zinc-200 hover:bg-white/5"
+              className="h-10 rounded-full border-white/10 bg-transparent px-5 text-sm text-[#c1c2c5] hover:bg-white/5"
             >
               Feedback
             </Button>
             <Avatar className="h-10 w-10 ring-1 ring-white/10">
-              <AvatarFallback className="bg-amber-500/80 text-sm font-semibold text-black">
+              <AvatarFallback className="bg-[#f5c652] text-sm font-semibold text-black">
                 {userInitials}
               </AvatarFallback>
             </Avatar>
@@ -276,26 +276,26 @@ export function PocInterface() {
         <main className="flex flex-1 flex-col items-center justify-center px-4">
           <div className="flex w-full max-w-3xl flex-col items-center">
             {/* Logo tile */}
-            <div className="mb-5 flex h-16 w-16 items-center justify-center overflow-hidden rounded-xl bg-[#8b1d4a]/20 ring-1 ring-[#8b1d4a]/40">
-              <Wand2 className="h-7 w-7 text-[#d63384]" />
+            <div className="mb-5 flex h-16 w-16 items-center justify-center overflow-hidden rounded-xl bg-[#830051]/20 ring-1 ring-[#830051]/40">
+              <Wand2 className="h-7 w-7 text-[#da338c]" />
             </div>
 
-            <h1 className="flex items-center gap-3 text-5xl font-semibold tracking-tight text-zinc-50">
+            <h1 className="flex items-center gap-3 text-5xl font-semibold tracking-tight text-white">
               Autorouter
-              <ChevronDown className="h-7 w-7 text-zinc-400" />
+              <ChevronDown className="h-7 w-7 text-[#909296]" />
             </h1>
-            <p className="mt-5 max-w-xl text-center text-base leading-relaxed text-zinc-400">
+            <p className="mt-5 max-w-xl text-center text-base leading-relaxed text-[#909296]">
               Intelligent model manager that classifies your prompt and routes
               it to the best available model.
             </p>
-            <p className="mt-2 text-center text-sm font-medium text-zinc-500">
+            <p className="mt-2 text-center text-sm font-medium text-[#5c5f66]">
               Proof of concept
             </p>
 
             {/* Composer */}
             <form
               onSubmit={handleSubmit}
-              className="mt-10 w-full rounded-2xl border border-white/10 bg-[#1c1c1c] shadow-lg"
+              className="mt-10 w-full rounded-2xl border border-white/10 bg-[#1a1b1e] shadow-lg"
             >
               <textarea
                 value={prompt}
@@ -308,7 +308,7 @@ export function PocInterface() {
                     handleSubmit();
                   }
                 }}
-                className="block w-full resize-none bg-transparent px-5 pt-5 text-base text-zinc-100 placeholder:text-zinc-500 focus:outline-none"
+                className="block w-full resize-none bg-transparent px-5 pt-5 text-base text-[#c1c2c5] placeholder:text-[#5c5f66] focus:outline-none"
               />
               <div className="flex items-center gap-2 px-3 pb-3 pt-2">
                 <ModelBadge
@@ -323,8 +323,8 @@ export function PocInterface() {
                 </IconChip>
                 <IconChip className="gap-1.5 px-3">
                   <Globe className="h-4 w-4" />
-                  <span className="text-sm text-zinc-300">Off</span>
-                  <ChevronDown className="h-3.5 w-3.5 text-zinc-400" />
+                  <span className="text-sm text-[#a6a7ab]">Off</span>
+                  <ChevronDown className="h-3.5 w-3.5 text-[#909296]" />
                 </IconChip>
                 <IconChip>
                   <Cloud className="h-4 w-4" />
@@ -345,7 +345,7 @@ export function PocInterface() {
                   <button
                     type="submit"
                     disabled={!prompt.trim() || routing}
-                    className="flex h-9 w-9 items-center justify-center rounded-full bg-[#8b1d4a] text-white transition hover:bg-[#a02257] disabled:opacity-40"
+                    className="flex h-9 w-9 items-center justify-center rounded-full bg-[#830051] text-white transition hover:bg-[#65003f] disabled:opacity-40"
                     aria-label="Send"
                   >
                     {routing ? (
@@ -376,9 +376,9 @@ export function PocInterface() {
                     key={q.id}
                     type="button"
                     onClick={() => handleQuickAction(q)}
-                    className="flex h-10 items-center gap-2 rounded-full border border-white/10 bg-[#1c1c1c] px-5 text-sm text-zinc-200 transition hover:border-white/20 hover:bg-[#2a2a2a]"
+                    className="flex h-10 items-center gap-2 rounded-full border border-white/10 bg-[#1a1b1e] px-5 text-sm text-[#c1c2c5] transition hover:border-white/20 hover:bg-[#25262b]"
                   >
-                    <Icon className="h-4 w-4 text-zinc-400" />
+                    <Icon className="h-4 w-4 text-[#909296]" />
                     {q.label}
                   </button>
                 );
@@ -388,7 +388,7 @@ export function PocInterface() {
         </main>
 
         {/* Footer */}
-        <footer className="flex items-center justify-center px-6 pb-4 text-xs text-zinc-500">
+        <footer className="flex items-center justify-center px-6 pb-4 text-xs text-[#5c5f66]">
           <span>AI-generated responses may be inaccurate or unreliable.</span>
         </footer>
       </div>
@@ -407,7 +407,7 @@ function IconChip({
     <button
       type="button"
       className={cn(
-        "flex h-9 items-center justify-center rounded-full bg-[#2a2a2a] px-2.5 text-zinc-300 hover:bg-[#333333]",
+        "flex h-9 items-center justify-center rounded-full bg-[#25262b] px-2.5 text-[#a6a7ab] hover:bg-[#2c2e33]",
         className
       )}
     >
@@ -435,7 +435,7 @@ function ModelBadge({
 
   return (
     <div
-      className="flex h-9 items-center gap-2 rounded-full bg-[#2a2a2a] px-3 text-sm text-zinc-200"
+      className="flex h-9 items-center gap-2 rounded-full bg-[#25262b] px-3 text-sm text-[#c1c2c5]"
       title={
         selectedModel
           ? `Auto: routed to ${selectedModel.name} (${category}, ${Math.round((confidence ?? 0) * 100)}%)`
@@ -443,7 +443,7 @@ function ModelBadge({
       }
     >
       {routing ? (
-        <Loader2 className="h-4 w-4 animate-spin text-[#d63384]" />
+        <Loader2 className="h-4 w-4 animate-spin text-[#da338c]" />
       ) : selectedModel && providerConfig?.logoUrl ? (
         <Image
           src={providerConfig.logoUrl}
@@ -454,7 +454,7 @@ function ModelBadge({
           unoptimized
         />
       ) : (
-        <Wand2 className="h-4 w-4 text-[#d63384]" />
+        <Wand2 className="h-4 w-4 text-[#da338c]" />
       )}
       <span className="font-medium">
         {selectedModel
@@ -463,7 +463,7 @@ function ModelBadge({
             ? "Auto · routing…"
             : "Auto"}
       </span>
-      <ChevronDown className="h-3.5 w-3.5 text-zinc-400" />
+      <ChevronDown className="h-3.5 w-3.5 text-[#909296]" />
     </div>
   );
 }
@@ -488,18 +488,18 @@ function RouteStatus({
 
   const pct = Math.round((result.confidence ?? 0) * 100);
   return (
-    <div className="mt-4 flex w-full items-center gap-3 rounded-lg border border-white/10 bg-[#1c1c1c] px-4 py-2.5 text-sm text-zinc-300">
-      <Sparkles className="h-4 w-4 text-[#d63384]" />
-      <span className="font-medium text-zinc-200">
+    <div className="mt-4 flex w-full items-center gap-3 rounded-lg border border-white/10 bg-[#1a1b1e] px-4 py-2.5 text-sm text-[#a6a7ab]">
+      <Sparkles className="h-4 w-4 text-[#da338c]" />
+      <span className="font-medium text-[#c1c2c5]">
         {model?.name ?? result.selectedModelId}
       </span>
-      <span className="text-zinc-500">·</span>
+      <span className="text-[#5c5f66]">·</span>
       <span className="capitalize">{result.category.replace("_", " ")}</span>
-      <span className="text-zinc-500">·</span>
+      <span className="text-[#5c5f66]">·</span>
       <span>{pct}% confidence</span>
       {result.reasoning && (
         <span
-          className="ml-auto truncate text-zinc-500"
+          className="ml-auto truncate text-[#5c5f66]"
           title={result.reasoning}
         >
           {result.reasoning}
