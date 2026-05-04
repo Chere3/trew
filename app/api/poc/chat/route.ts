@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { resolveOpenRouterId } from "@/app/poc/poc-models";
 
 interface ChatMessage {
   role: "user" | "assistant" | "system";
@@ -31,6 +32,10 @@ export async function POST(req: Request) {
 
   const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
+  // The catalogue uses internal AZ ids, but the demo's chat call goes
+  // through OpenRouter, so translate to the closest public equivalent.
+  const upstreamModelId = resolveOpenRouterId(model);
+
   const upstream = await fetch(
     "https://openrouter.ai/api/v1/chat/completions",
     {
@@ -42,7 +47,7 @@ export async function POST(req: Request) {
         "X-Title": "Autorouter PoC",
       },
       body: JSON.stringify({
-        model,
+        model: upstreamModelId,
         messages,
         stream: true,
       }),
