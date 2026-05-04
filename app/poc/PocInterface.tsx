@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useRef, useCallback } from "react";
-import useSWR from "swr";
+import { useState, useEffect, useRef, useCallback } from "react";
 import Image from "next/image";
 import {
   ChevronDown,
@@ -27,13 +26,19 @@ import {
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
-import { API_ENDPOINTS } from "@/lib/constants";
 import { getProviderConfig } from "@/lib/models/providers";
-import type { Model, AutorouteResult } from "@/lib/types";
 
 const POC_AUTOROUTE_ENDPOINT = "/api/poc/autoroute";
 
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
+interface PocAutorouteResponse {
+  selectedModelId: string;
+  modelName: string;
+  provider?: string;
+  category: string;
+  confidence: number;
+  reasoning?: string;
+  offline?: boolean;
+}
 
 interface SidebarSection {
   id: string;
@@ -97,21 +102,12 @@ export function PocInterface() {
   );
   const [prompt, setPrompt] = useState("");
   const [routing, setRouting] = useState(false);
-  const [routeResult, setRouteResult] = useState<AutorouteResult | null>(null);
+  const [routeResult, setRouteResult] = useState<PocAutorouteResponse | null>(
+    null
+  );
   const [routeError, setRouteError] = useState<string | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastRoutedPromptRef = useRef<string>("");
-
-  const { data: modelsData } = useSWR<{ models: Model[] }>(
-    API_ENDPOINTS.MODELS,
-    fetcher
-  );
-  const models = modelsData?.models ?? [];
-
-  const selectedModel = useMemo(() => {
-    if (!routeResult) return null;
-    return models.find((m) => m.id === routeResult.selectedModelId) ?? null;
-  }, [routeResult, models]);
 
   const routePrompt = useCallback(async (text: string) => {
     const trimmed = text.trim();
@@ -129,7 +125,7 @@ export function PocInterface() {
         const body = await res.json().catch(() => ({}));
         throw new Error(body.error || `Autoroute failed (${res.status})`);
       }
-      const data = (await res.json()) as AutorouteResult;
+      const data = (await res.json()) as PocAutorouteResponse;
       setRouteResult(data);
     } catch (e) {
       setRouteError(e instanceof Error ? e.message : "Autoroute failed");
@@ -313,9 +309,7 @@ export function PocInterface() {
               <div className="flex items-center gap-2 px-3 pb-3 pt-2">
                 <ModelBadge
                   routing={routing}
-                  selectedModel={selectedModel}
-                  category={routeResult?.category}
-                  confidence={routeResult?.confidence}
+                  result={routeResult}
                   hasPrompt={!!prompt.trim()}
                 />
                 <IconChip>
@@ -360,11 +354,7 @@ export function PocInterface() {
 
             {/* Autorouter status panel */}
             {(routeResult || routeError) && (
-              <RouteStatus
-                error={routeError}
-                result={routeResult}
-                model={selectedModel}
-              />
+              <RouteStatus error={routeError} result={routeResult} />
             )}
 
             {/* Quick action buttons */}
@@ -418,33 +408,29 @@ function IconChip({
 
 function ModelBadge({
   routing,
-  selectedModel,
-  category,
-  confidence,
+  result,
   hasPrompt,
 }: {
   routing: boolean;
-  selectedModel: Model | null;
-  category?: string;
-  confidence?: number;
+  result: PocAutorouteResponse | null;
   hasPrompt: boolean;
 }) {
-  const providerConfig = selectedModel
-    ? getProviderConfig(selectedModel.provider)
+  const providerConfig = result?.provider
+    ? getProviderConfig(result.provider)
     : null;
 
   return (
     <div
       className="flex h-9 items-center gap-2 rounded-full bg-[#25262b] px-3 text-sm text-[#c1c2c5]"
       title={
-        selectedModel
-          ? `Auto: routed to ${selectedModel.name} (${category}, ${Math.round((confidence ?? 0) * 100)}%)`
+        result
+          ? `Auto: routed to ${result.modelName} (${result.category}, ${Math.round(result.confidence * 100)}%)`
           : "Auto-router (intelligent model selection)"
       }
     >
       {routing ? (
         <Loader2 className="h-4 w-4 animate-spin text-[#da338c]" />
-      ) : selectedModel && providerConfig?.logoUrl ? (
+      ) : result && providerConfig?.logoUrl ? (
         <Image
           src={providerConfig.logoUrl}
           alt={providerConfig.displayName}
@@ -457,8 +443,8 @@ function ModelBadge({
         <Wand2 className="h-4 w-4 text-[#da338c]" />
       )}
       <span className="font-medium">
-        {selectedModel
-          ? `Auto · ${selectedModel.name}`
+        {result
+          ? `Auto · ${result.modelName}`
           : hasPrompt && routing
             ? "Auto · routing…"
             : "Auto"}
@@ -471,11 +457,9 @@ function ModelBadge({
 function RouteStatus({
   error,
   result,
-  model,
 }: {
   error: string | null;
-  result: AutorouteResult | null;
-  model: Model | null;
+  result: PocAutorouteResponse | null;
 }) {
   if (error) {
     return (
@@ -491,7 +475,7 @@ function RouteStatus({
     <div className="mt-4 flex w-full items-center gap-3 rounded-lg border border-white/10 bg-[#1a1b1e] px-4 py-2.5 text-sm text-[#a6a7ab]">
       <Sparkles className="h-4 w-4 text-[#da338c]" />
       <span className="font-medium text-[#c1c2c5]">
-        {model?.name ?? result.selectedModelId}
+        {result.modelName}
       </span>
       <span className="text-[#5c5f66]">·</span>
       <span className="capitalize">{result.category.replace("_", " ")}</span>
