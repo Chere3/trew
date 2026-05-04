@@ -39,6 +39,7 @@ import {
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { getProviderConfig } from "@/lib/models/providers";
+import { MarkdownRenderer } from "@/components/media/MarkdownRenderer";
 import { POC_MODELS, type PocModel } from "./poc-models";
 
 const POC_AUTOROUTE_ENDPOINT = "/api/poc/autoroute";
@@ -852,18 +853,21 @@ function MessageBubble({ message }: { message: ChatMessage }) {
             <Sparkles className="h-5 w-5 text-[#da338c]" />
           )}
         </div>
-        <div className="min-w-0 flex-1 whitespace-pre-wrap text-base leading-relaxed text-[#c1c2c5]">
+        <div className="min-w-0 flex-1 text-base leading-relaxed text-[#c1c2c5]">
           {message.error ? (
             <span className="text-red-300">Error: {message.error}</span>
-          ) : (
+          ) : message.content ? (
             <>
-              {message.content || (
-                <span className="text-[#5c5f66]">Thinking…</span>
-              )}
-              {message.isStreaming && message.content && (
+              <MarkdownRenderer
+                content={message.content}
+                className="poc-markdown text-[#c1c2c5]"
+              />
+              {message.isStreaming && (
                 <span className="ml-0.5 inline-block h-3 w-[2px] animate-pulse bg-[#da338c] align-middle" />
               )}
             </>
+          ) : (
+            <span className="text-[#5c5f66]">Thinking…</span>
           )}
         </div>
       </div>
