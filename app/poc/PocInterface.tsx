@@ -22,11 +22,19 @@ import {
   Code as CodeIcon,
   Sparkles,
   Loader2,
+  Settings,
+  Check,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { getProviderConfig } from "@/lib/models/providers";
+import { POC_MODELS, type PocModel } from "./poc-models";
 
 const POC_AUTOROUTE_ENDPOINT = "/api/poc/autoroute";
 
@@ -106,6 +114,8 @@ export function PocInterface() {
     null
   );
   const [routeError, setRouteError] = useState<string | null>(null);
+  const [pinnedModel, setPinnedModel] = useState<PocModel | null>(null);
+  const [modelPickerOpen, setModelPickerOpen] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastRoutedPromptRef = useRef<string>("");
 
@@ -136,7 +146,7 @@ export function PocInterface() {
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    if (!prompt.trim()) {
+    if (!prompt.trim() || pinnedModel) {
       setRouteResult(null);
       setRouteError(null);
       lastRoutedPromptRef.current = "";
@@ -148,7 +158,7 @@ export function PocInterface() {
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [prompt, routePrompt]);
+  }, [prompt, routePrompt, pinnedModel]);
 
   const toggleSection = (id: string) =>
     setOpenSections((prev) => ({ ...prev, [id]: !prev[id] }));
@@ -157,8 +167,20 @@ export function PocInterface() {
 
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
-    if (!prompt.trim()) return;
+    if (!prompt.trim() || pinnedModel) return;
     await routePrompt(prompt);
+  };
+
+  const pickAuto = () => {
+    setPinnedModel(null);
+    setModelPickerOpen(false);
+  };
+
+  const pickModel = (m: PocModel) => {
+    setPinnedModel(m);
+    setRouteResult(null);
+    setRouteError(null);
+    setModelPickerOpen(false);
   };
 
   const userInitials = "U";
@@ -307,10 +329,15 @@ export function PocInterface() {
                 className="block w-full resize-none bg-transparent px-5 pt-5 text-base text-[#c1c2c5] placeholder:text-[#5c5f66] focus:outline-none"
               />
               <div className="flex items-center gap-2 px-3 pb-3 pt-2">
-                <ModelBadge
+                <ModelPicker
+                  open={modelPickerOpen}
+                  onOpenChange={setModelPickerOpen}
                   routing={routing}
                   result={routeResult}
+                  pinnedModel={pinnedModel}
                   hasPrompt={!!prompt.trim()}
+                  onPickAuto={pickAuto}
+                  onPickModel={pickModel}
                 />
                 <IconChip>
                   <Paperclip className="h-4 w-4" />
@@ -406,51 +433,153 @@ function IconChip({
   );
 }
 
-function ModelBadge({
+function ModelPicker({
+  open,
+  onOpenChange,
   routing,
   result,
+  pinnedModel,
   hasPrompt,
+  onPickAuto,
+  onPickModel,
 }: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   routing: boolean;
   result: PocAutorouteResponse | null;
+  pinnedModel: PocModel | null;
   hasPrompt: boolean;
+  onPickAuto: () => void;
+  onPickModel: (m: PocModel) => void;
 }) {
-  const providerConfig = result?.provider
-    ? getProviderConfig(result.provider)
-    : null;
+  const activeProvider = pinnedModel?.provider ?? result?.provider;
+  const providerConfig = activeProvider ? getProviderConfig(activeProvider) : null;
+
+  const label = pinnedModel
+    ? pinnedModel.name
+    : result
+      ? `Auto · ${result.modelName}`
+      : hasPrompt && routing
+        ? "Auto · routing…"
+        : "Auto";
 
   return (
-    <div
-      className="flex h-9 items-center gap-2 rounded-full bg-[#25262b] px-3 text-sm text-[#c1c2c5]"
-      title={
-        result
-          ? `Auto: routed to ${result.modelName} (${result.category}, ${Math.round(result.confidence * 100)}%)`
-          : "Auto-router (intelligent model selection)"
-      }
-    >
-      {routing ? (
-        <Loader2 className="h-4 w-4 animate-spin text-[#da338c]" />
-      ) : result && providerConfig?.logoUrl ? (
-        <Image
-          src={providerConfig.logoUrl}
-          alt={providerConfig.displayName}
-          width={16}
-          height={16}
-          className="object-contain"
-          unoptimized
-        />
-      ) : (
-        <Wand2 className="h-4 w-4 text-[#da338c]" />
-      )}
-      <span className="font-medium">
-        {result
-          ? `Auto · ${result.modelName}`
-          : hasPrompt && routing
-            ? "Auto · routing…"
-            : "Auto"}
-      </span>
-      <ChevronDown className="h-3.5 w-3.5 text-[#909296]" />
-    </div>
+    <Popover open={open} onOpenChange={onOpenChange}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          className="flex h-9 items-center gap-2 rounded-full bg-[#25262b] px-3 text-sm text-[#c1c2c5] hover:bg-[#2c2e33]"
+          title={
+            pinnedModel
+              ? `Pinned: ${pinnedModel.name}`
+              : result
+                ? `Auto: routed to ${result.modelName} (${result.category}, ${Math.round(result.confidence * 100)}%)`
+                : "Auto-router (intelligent model selection)"
+          }
+        >
+          {!pinnedModel && routing ? (
+            <Loader2 className="h-4 w-4 animate-spin text-[#da338c]" />
+          ) : providerConfig?.logoUrl ? (
+            <Image
+              src={providerConfig.logoUrl}
+              alt={providerConfig.displayName}
+              width={16}
+              height={16}
+              className="object-contain"
+              unoptimized
+            />
+          ) : (
+            <Wand2 className="h-4 w-4 text-[#da338c]" />
+          )}
+          <span className="font-medium">{label}</span>
+          <ChevronDown className="h-3.5 w-3.5 text-[#909296]" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent
+        side="top"
+        align="start"
+        sideOffset={8}
+        className="w-[360px] rounded-xl border border-[#373a40] bg-[#1a1b1e] p-0 text-[#c1c2c5] shadow-lg"
+      >
+        <div className="px-4 pb-2 pt-4 text-sm font-semibold text-[#c1c2c5]">
+          Models ({POC_MODELS.length + 1})
+        </div>
+        <div className="max-h-[420px] overflow-y-auto">
+          <button
+            type="button"
+            onClick={onPickAuto}
+            className={cn(
+              "flex w-full items-start gap-3 px-4 py-3 text-left transition hover:bg-[#25262b]",
+              !pinnedModel && "bg-[#25262b]/60"
+            )}
+          >
+            <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#830051]/20 ring-1 ring-[#830051]/40">
+              <Wand2 className="h-4 w-4 text-[#da338c]" />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="flex items-center gap-2">
+                <span className="text-base font-semibold text-white">Auto</span>
+                {!pinnedModel && (
+                  <Check className="h-4 w-4 text-[#da338c]" />
+                )}
+              </span>
+              <span className="mt-0.5 block text-xs leading-snug text-[#909296]">
+                Smart routing — classifies your prompt and picks the best model
+                from the catalogue.
+              </span>
+            </span>
+          </button>
+          <div className="mx-4 my-1 border-t border-[#25262b]" />
+          {POC_MODELS.map((m) => {
+            const cfg = getProviderConfig(m.provider);
+            const selected = pinnedModel?.id === m.id;
+            return (
+              <button
+                key={m.id}
+                type="button"
+                onClick={() => onPickModel(m)}
+                className={cn(
+                  "flex w-full items-start gap-3 px-4 py-3 text-left transition hover:bg-[#25262b]",
+                  selected && "bg-[#25262b]/60"
+                )}
+              >
+                <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center">
+                  {cfg.logoUrl ? (
+                    <Image
+                      src={cfg.logoUrl}
+                      alt={cfg.displayName}
+                      width={20}
+                      height={20}
+                      className="object-contain"
+                      unoptimized
+                    />
+                  ) : (
+                    <Sparkles className="h-4 w-4 text-[#909296]" />
+                  )}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="flex items-center gap-2">
+                    <span className="text-sm font-semibold text-white">
+                      {m.name}
+                    </span>
+                    {selected && (
+                      <Check className="h-4 w-4 text-[#da338c]" />
+                    )}
+                  </span>
+                  <span className="mt-0.5 block text-xs leading-snug text-[#909296]">
+                    {m.description}
+                  </span>
+                </span>
+              </button>
+            );
+          })}
+        </div>
+        <div className="flex items-center gap-2 border-t border-[#25262b] px-4 py-3 text-sm text-[#a6a7ab]">
+          <Settings className="h-4 w-4" />
+          <span>Change default model…</span>
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 }
 
