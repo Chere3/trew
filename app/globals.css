@@ -161,3 +161,68 @@ body {
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
 }
+
+/* Poc markdown rendering (used without the tailwind typography plugin) */
+.poc-markdown p {
+  margin: 0 0 0.75em 0;
+  line-height: 1.65;
+}
+.poc-markdown p:last-child {
+  margin-bottom: 0;
+}
+.poc-markdown ul,
+.poc-markdown ol {
+  margin: 0 0 0.75em 1.5em;
+  line-height: 1.65;
+}
+.poc-markdown ul {
+  list-style: disc;
+}
+.poc-markdown ol {
+  list-style: decimal;
+}
+.poc-markdown li {
+  margin-bottom: 0.25em;
+}
+.poc-markdown blockquote {
+  margin: 0.75em 0;
+  padding: 0.25em 0 0.25em 1em;
+  border-left: 3px solid #373a40;
+  color: #a6a7ab;
+}
+.poc-markdown a {
+  color: #da338c;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.poc-markdown .inline-code,
+.poc-markdown code:not(pre code) {
+  background: #25262b;
+  border-radius: 4px;
+  padding: 0.15em 0.4em;
+  font-size: 0.9em;
+  font-family: var(--mantine-font-family-monospace, ui-monospace, SFMono-Regular,
+    Menlo, monospace);
+  color: #f5c652;
+}
+.poc-markdown pre {
+  margin: 0.75em 0;
+}
+.poc-markdown hr {
+  border: none;
+  border-top: 1px solid #373a40;
+  margin: 1.25em 0;
+}
+.poc-markdown table {
+  border-collapse: collapse;
+  width: 100%;
+}
+.poc-markdown th,
+.poc-markdown td {
+  border: 1px solid #373a40;
+  padding: 0.5em 0.75em;
+}
+.poc-markdown th {
+  background: #1a1b1e;
+  text-align: left;
+}
