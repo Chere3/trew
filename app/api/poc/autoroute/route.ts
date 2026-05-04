@@ -18,6 +18,7 @@ export async function POST(req: Request) {
 
   try {
     const rankedModels = POC_MODELS.map((m) => toRankedModel(m));
+    const allowedIds = new Set(POC_MODELS.map((m) => m.id));
 
     let result: AutorouteResult;
     let classifier: "ai" | "heuristic" | "ai-fallback" = "heuristic";
@@ -51,6 +52,18 @@ export async function POST(req: Request) {
       result = heuristicSelect(prompt, rankedModels);
     }
 
+    // The shared selectModel hardcodes QUICK_MODEL_DEFAULT (a Moonshot/Kimi
+    // model) for high-confidence "quick" classifications, and the Fireworks
+    // path may return any model id. Force every selection back into the AZ
+    // catalogue so we never serve a non-allowed (e.g. Chinese) model.
+    if (!allowedIds.has(result.selectedModelId)) {
+      const fallback = pickFallbackForCategory(result.category, rankedModels);
+      console.warn(
+        `[poc/autoroute] Model ${result.selectedModelId} not in catalogue; substituting ${fallback}.`
+      );
+      result = { ...result, selectedModelId: fallback };
+    }
+
     const matched = POC_MODELS.find((m) => m.id === result.selectedModelId);
 
     return NextResponse.json({
@@ -70,6 +83,34 @@ export async function POST(req: Request) {
       { status: 500 }
     );
   }
+}
+
+/**
+ * Choose a sensible AZ-catalogue model for a given category. Used to override
+ * any selection the upstream router makes that points outside the catalogue.
+ */
+function pickFallbackForCategory(
+  category: string,
+  rankedModels: ReturnType<typeof toRankedModel>[]
+): string {
+  const sortBy = (key: "codingIndex" | "mathIndex" | "intelligenceIndex") =>
+    [...rankedModels]
+      .filter((m) => typeof m[key] === "number")
+      .sort((a, b) => (b[key] ?? 0) - (a[key] ?? 0))[0]?.id;
+
+  if (category === "coding") return sortBy("codingIndex") ?? rankedModels[0].id;
+  if (category === "math_reasoning")
+    return sortBy("mathIndex") ?? rankedModels[0].id;
+  if (category === "quick") {
+    // Prefer the cheapest / lowest-intelligence chat model in the catalogue.
+    const cheapest = [...rankedModels]
+      .filter((m) => typeof m.intelligenceIndex === "number")
+      .sort(
+        (a, b) => (a.intelligenceIndex ?? 0) - (b.intelligenceIndex ?? 0)
+      )[0];
+    return cheapest?.id ?? rankedModels[0].id;
+  }
+  return sortBy("intelligenceIndex") ?? rankedModels[0].id;
 }
 
 /**
