@@ -6,14 +6,12 @@ import {
   ChevronDown,
   ChevronRight,
   PanelLeft,
-  Plus,
-  Send,
+  Edit3,
+  ArrowUp,
   Paperclip,
   Globe,
   Cloud,
-  LayoutGrid,
   Image as ImageIcon,
-  Mic,
   Info,
   Wand2,
   Megaphone,
@@ -24,6 +22,13 @@ import {
   Loader2,
   Settings,
   Check,
+  Copy,
+  RotateCcw,
+  AlertTriangle,
+  Download,
+  Share2,
+  Pin,
+  Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -317,7 +322,7 @@ export function PocInterface() {
             className="ml-auto h-10 gap-2 rounded-full bg-[#830051] px-4 text-sm font-medium text-white hover:bg-[#65003f]"
             onClick={handleNewChat}
           >
-            <Plus className="h-4 w-4" />
+            <Edit3 className="h-4 w-4" />
             New
           </Button>
         </div>
@@ -366,8 +371,8 @@ export function PocInterface() {
       {/* Main area */}
       <div className="relative flex min-w-0 flex-1 flex-col">
         {/* Top bar */}
-        <header className="flex h-16 items-center justify-between px-6">
-          <div className="flex items-center gap-2">
+        <header className="flex h-16 items-center justify-between gap-4 px-6">
+          <div className="flex min-w-0 items-center gap-3">
             {collapsed && (
               <Button
                 variant="ghost"
@@ -379,8 +384,37 @@ export function PocInterface() {
                 <PanelLeft className="h-5 w-5" />
               </Button>
             )}
+            {messages.length > 0 && (
+              <div className="min-w-0">
+                <h1 className="truncate text-lg font-semibold text-white">
+                  {messages.find((m) => m.role === "user")?.content.slice(0, 60) ||
+                    "New conversation"}
+                </h1>
+                <p className="text-xs text-[#909296]">
+                  Created {new Date().toLocaleString(undefined, {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                  })}
+                </p>
+              </div>
+            )}
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            {messages.length > 0 && (
+              <>
+                <ChatHeaderIconButton ariaLabel="Export Chat">
+                  <Download className="h-5 w-5" />
+                </ChatHeaderIconButton>
+                <ChatHeaderIconButton ariaLabel="Share Chat">
+                  <Share2 className="h-5 w-5" />
+                </ChatHeaderIconButton>
+                <ChatHeaderIconButton ariaLabel="Pin Chat">
+                  <Pin className="h-5 w-5" />
+                </ChatHeaderIconButton>
+                <span className="mx-1 h-6 w-px bg-white/10" />
+              </>
+            )}
             <Button
               variant="outline"
               className="h-10 rounded-full border-white/10 bg-transparent px-5 text-sm text-[#c1c2c5] hover:bg-white/5"
@@ -456,7 +490,7 @@ export function PocInterface() {
                   <div ref={messagesEndRef} />
                 </div>
               </div>
-              <div className="border-t border-white/5 bg-[#101113] px-4 py-4">
+              <div className="bg-[#101113] px-4 pb-6 pt-2">
                 <div className="mx-auto w-full max-w-3xl">
                   <Composer
                     prompt={prompt}
@@ -487,17 +521,59 @@ export function PocInterface() {
 function IconChip({
   children,
   className,
+  ariaLabel,
 }: {
   children: React.ReactNode;
   className?: string;
+  ariaLabel?: string;
 }) {
   return (
     <button
       type="button"
+      aria-label={ariaLabel}
       className={cn(
         "flex h-9 items-center justify-center rounded-full bg-[#25262b] px-2.5 text-[#a6a7ab] hover:bg-[#2c2e33]",
         className
       )}
+    >
+      {children}
+    </button>
+  );
+}
+
+function ChatHeaderIconButton({
+  children,
+  ariaLabel,
+}: {
+  children: React.ReactNode;
+  ariaLabel: string;
+}) {
+  return (
+    <button
+      type="button"
+      aria-label={ariaLabel}
+      className="flex h-10 w-10 items-center justify-center rounded-full bg-[#25262b] text-[#c1c2c5] transition hover:bg-[#2c2e33]"
+    >
+      {children}
+    </button>
+  );
+}
+
+function MessageActionButton({
+  children,
+  ariaLabel,
+  onClick,
+}: {
+  children: React.ReactNode;
+  ariaLabel: string;
+  onClick?: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      aria-label={ariaLabel}
+      onClick={onClick}
+      className="flex h-8 w-8 items-center justify-center rounded-full text-[#909296] transition hover:bg-[#25262b] hover:text-[#c1c2c5]"
     >
       {children}
     </button>
@@ -683,7 +759,7 @@ function Composer({
         }}
         className="block w-full resize-none bg-transparent px-5 pt-5 text-base text-[#c1c2c5] placeholder:text-[#5c5f66] focus:outline-none"
       />
-      <div className="flex items-center gap-2 px-3 pb-3 pt-2">
+      <div className="flex flex-wrap items-center gap-2 px-3 pb-3 pt-2">
         <ModelPicker
           open={modelPickerOpen}
           onOpenChange={setModelPickerOpen}
@@ -691,40 +767,41 @@ function Composer({
           onPickAuto={pickAuto}
           onPickModel={pickModel}
         />
-        <IconChip>
+        <IconChip ariaLabel="Attach files">
           <Paperclip className="h-4 w-4" />
         </IconChip>
-        <IconChip className="gap-1.5 px-3">
+        <IconChip className="gap-1.5 px-3" ariaLabel="Web Search">
           <Globe className="h-4 w-4" />
           <span className="text-sm text-[#a6a7ab]">Off</span>
           <ChevronDown className="h-3.5 w-3.5 text-[#909296]" />
         </IconChip>
-        <IconChip>
+        <IconChip className="gap-1.5 px-3" ariaLabel="OneDrive">
           <Cloud className="h-4 w-4" />
+          <span className="text-sm text-[#a6a7ab]">Connected</span>
         </IconChip>
-        <IconChip>
-          <LayoutGrid className="h-4 w-4" />
+        <IconChip ariaLabel="Teams transcript">
+          <Users className="h-4 w-4" />
         </IconChip>
-        <IconChip>
+        <IconChip ariaLabel="Image generation">
           <ImageIcon className="h-4 w-4" />
         </IconChip>
-        <IconChip>
+        <IconChip ariaLabel="Feature guidelines">
           <Info className="h-4 w-4" />
         </IconChip>
         <div className="ml-auto flex items-center gap-2">
-          <IconChip>
-            <Mic className="h-4 w-4" />
+          <IconChip ariaLabel="Enhance prompt">
+            <Wand2 className="h-4 w-4" />
           </IconChip>
           <button
             type="submit"
             disabled={!prompt.trim() || busy}
-            className="flex h-9 w-9 items-center justify-center rounded-full bg-[#830051] text-white transition hover:bg-[#65003f] disabled:opacity-40"
-            aria-label="Send"
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-[#830051] text-white transition hover:bg-[#65003f] disabled:opacity-40"
+            aria-label="Send Message"
           >
             {busy ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
-              <Send className="h-4 w-4" />
+              <ArrowUp className="h-5 w-5" />
             )}
           </button>
         </div>
@@ -734,10 +811,16 @@ function Composer({
 }
 
 function MessageBubble({ message }: { message: ChatMessage }) {
+  const stamp = new Date().toLocaleTimeString(undefined, {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+
   if (message.role === "user") {
     return (
-      <div className="flex justify-end">
-        <div className="max-w-[80%] rounded-2xl bg-[#830051] px-4 py-3 text-sm text-white">
+      <div className="flex flex-col items-end gap-1">
+        <span className="text-xs text-[#5c5f66]">{stamp}</span>
+        <div className="max-w-[85%] whitespace-pre-wrap text-right text-base leading-relaxed text-[#c1c2c5]">
           {message.content}
         </div>
       </div>
@@ -750,25 +833,26 @@ function MessageBubble({ message }: { message: ChatMessage }) {
 
   return (
     <div className="flex flex-col gap-2">
+      <span className="text-xs text-[#5c5f66]">{stamp}</span>
       {(message.routing || message.modelName) && (
         <RoutingChip message={message} />
       )}
-      <div className="flex items-start gap-3">
-        <div className="mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#25262b]">
+      <div className="flex items-start gap-4">
+        <div className="mt-0.5 flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#25262b]">
           {providerCfg?.logoUrl ? (
             <Image
               src={providerCfg.logoUrl}
               alt={providerCfg.displayName}
-              width={16}
-              height={16}
+              width={28}
+              height={28}
               className="object-contain"
               unoptimized
             />
           ) : (
-            <Sparkles className="h-3.5 w-3.5 text-[#da338c]" />
+            <Sparkles className="h-5 w-5 text-[#da338c]" />
           )}
         </div>
-        <div className="min-w-0 flex-1 whitespace-pre-wrap text-sm leading-relaxed text-[#c1c2c5]">
+        <div className="min-w-0 flex-1 whitespace-pre-wrap text-base leading-relaxed text-[#c1c2c5]">
           {message.error ? (
             <span className="text-red-300">Error: {message.error}</span>
           ) : (
@@ -777,12 +861,28 @@ function MessageBubble({ message }: { message: ChatMessage }) {
                 <span className="text-[#5c5f66]">Thinking…</span>
               )}
               {message.isStreaming && message.content && (
-                <span className="ml-0.5 inline-block h-3 w-1 animate-pulse bg-[#da338c] align-middle" />
+                <span className="ml-0.5 inline-block h-3 w-[2px] animate-pulse bg-[#da338c] align-middle" />
               )}
             </>
           )}
         </div>
       </div>
+      {!message.isStreaming && !message.error && message.content && (
+        <div className="ml-16 mt-1 flex items-center gap-1">
+          <MessageActionButton
+            ariaLabel="Copy response"
+            onClick={() => navigator.clipboard?.writeText(message.content)}
+          >
+            <Copy className="h-4 w-4" />
+          </MessageActionButton>
+          <MessageActionButton ariaLabel="Report response">
+            <AlertTriangle className="h-4 w-4" />
+          </MessageActionButton>
+          <MessageActionButton ariaLabel="Retry response">
+            <RotateCcw className="h-4 w-4" />
+          </MessageActionButton>
+        </div>
+      )}
     </div>
   );
 }
